@@ -5,7 +5,10 @@ WordPress-Elasticsearch Lib
 ---------------------------
 A library for building WordPress Elasticsearch plugins
 
+A library for building WordPress Elasticsearch plugins
+
 Design Goals:
+
 1. Encourage a common ES WordPress schema so basic queries will work the same way for everyone.
 2. Leave room for expanding schemas for plugins and future development.
 3. Independent of ES Clients (ie Elastica, Sherlock, elasticsearch should all work)
@@ -18,10 +21,9 @@ Glossary
 
 
 Requirements:
+
 - WordPress 3.5+
 - To achieve multi-lingual support, this library requires the use of the following ES plugins
   https://github.com/elasticsearch/elasticsearch-analysis-icu (required by all analyzers)
   https://github.com/elasticsearch/elasticsearch-analysis-kuromoji
   https://github.com/elasticsearch/elasticsearch-analysis-smartcn
-
-
