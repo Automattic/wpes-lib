@@ -5,8 +5,6 @@ WordPress-Elasticsearch Lib
 ---------------------------
 A library for building WordPress Elasticsearch plugins
 
-A library for building WordPress Elasticsearch plugins
-
 Design Goals:
 
 1. Encourage a common ES WordPress schema so basic queries will work the same way for everyone.
