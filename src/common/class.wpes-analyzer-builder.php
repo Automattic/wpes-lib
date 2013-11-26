@@ -2,26 +2,30 @@
 
 class WPES_Analyzer_Builder {
 
-	//Analyzer Strategy
-	// -Use very light or minimal stemming to avoid losing semantic information 
-	//  (eg informed and inform have very different meanings)
-	//   See:
-	//    http://www.searchworkings.org/blog/-/blogs/388936
-	//    http://www.ercim.eu/publication/ws-proceedings/CLEF2/savoy.pdf
-	// -Use stop words for those languages we have them for (and add Hebrew)
-	// -Use ICU Tokenizer for most all cases except where there is a better lang specific tokenizer (eg Japanese)
-	//   See details on tokenizers: 
-	//    ICU (good on most all Unicode): http://www.unicode.org/reports/tr29/
-	//    kuromoji (Japanese word segmentation): http://www.atilika.org/
-	//    smart-cn (Chinese sentence and word segmentation): http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/api/contrib-smartcn/org/apache/lucene/analysis/cn/smart/SmartChineseAnalyzer.html
-	//    cjk (Tokenizes characters into bigrams, used for Korean because we don't have a smarter tokenizer): http://lucene.apache.org/core/3_6_0/api/all/org/apache/lucene/analysis/cjk/package-summary.html
-	// -ICU Folding and Normalization to make characters consistent (this handles lowercasing).
-	//   See:
-	//    http://www.unicode.org/reports/tr30/tr30-4.html
-	//    http://userguide.icu-project.org/transforms/normalization
-	// -'default' analyzer 
-	//   -For Indexing Languages without custom analyzers/stemmers/stopwords
-	//   -Search queries use the 'default' analyzer to _mostly_ work across all languages (stemmed words don't!)
+	/* Analyzer Strategy
+	 * -Use very light or minimal stemming to avoid losing semantic information 
+	 *  (eg informed and inform have very different meanings)
+	 *   See:
+	 *    http://www.searchworkings.org/blog/-/blogs/388936
+	 *    http://www.ercim.eu/publication/ws-proceedings/CLEF2/savoy.pdf
+	 * -Use stop words for those languages we have them for (and add Hebrew)
+	 * -Use ICU Tokenizer for most all cases except where there is a better lang specific tokenizer (eg Japanese)
+	 *   See details on tokenizers: 
+	 *    ICU (good on most all Unicode): http://www.unicode.org/reports/tr29/
+	 *    kuromoji (Japanese word segmentation): http://www.atilika.org/
+	 *    smart-cn (Chinese sentence and word segmentation): http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/api/contrib-smartcn/org/apache/lucene/analysis/cn/smart/SmartChineseAnalyzer.html
+	 *    cjk (Tokenizes characters into bigrams, used for Korean because we don't have a smarter tokenizer): http://lucene.apache.org/core/3_6_0/api/all/org/apache/lucene/analysis/cjk/package-summary.html
+	 * -ICU Folding and Normalization to make characters consistent (this handles lowercasing).
+	 *   See:
+	 *    http://www.unicode.org/reports/tr30/tr30-4.html
+	 *    http://userguide.icu-project.org/transforms/normalization
+	 * -'default' analyzer 
+	 *   -For Indexing Languages without custom analyzers/stemmers/stopwords
+	 *   -Search queries use the 'default' analyzer to _mostly_ work across all languages (stemmed words don't!)
+	 *
+	 * A more detailed explanation is available here: 
+	 *   http://gibrown.wordpress.com/2013/05/01/three-principles-for-multilingal-indexing-in-elasticsearch/ 
+	 */
 
 	var $supported_languages = array(
 		//lang => analyzer_name, analyzer, tokenizer, stop words, stemming
@@ -231,6 +235,13 @@ class WPES_Analyzer_Builder {
 			'stopwords' => null, 
 			'stemming'  => null 
 		),
+		'lowercase' => array(
+			'name'      => 'lowercase_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'keyword',
+			'stopwords' => null,
+			'stemming'  => null,
+		),
 		'default' => array( //general analyzer used as the default for search (works pretty well across langs)
 			'name'      => 'default',
 			'analyzer'  => 'custom', 
@@ -240,6 +251,8 @@ class WPES_Analyzer_Builder {
 		),
 	);
 
+	//The language is supported by the elasticsearch-langdetect plugin
+	// see: https://github.com/jprante/elasticsearch-langdetect
 	var $has_lang_detection = array( 'af' => true, 'ar' => true, 'bg' => true, 'bn' => true, 'cs' => true, 'da' => true, 'de' => true, 'el' => true, 'en' => true, 'es' => true, 'et' => true, 'fa' => true, 'fi' => true, 'fr' => true, 'gu' => true, 'he' => true, 'hi' => true, 'hr' => true, 'hu' => true, 'id' => true, 'it' => true, 'ja' => true, 'kn' => true, 'ko' => true, 'lt' => true, 'lv' => true, 'mk' => true, 'ml' => true, 'mr' => true, 'ne' => true, 'nl' => true, 'no' => true, 'pa' => true, 'pl' => true, 'pt' => true, 'ro' => true, 'ru' => true, 'sk' => true, 'sl' => true, 'so' => true, 'sq' => true, 'sv' => true, 'sw' => true, 'ta' => true, 'te' => true, 'th' => true, 'tl' => true, 'tr' => true, 'uk' => true, 'ur' => true, 'vi' => true, 'zh-cn' => true, 'zh-tw' => true );
 
 	static $instance;

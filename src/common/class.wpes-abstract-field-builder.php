@@ -1,19 +1,12 @@
 <?php
 
-require_once dirname( __FILE__ ) . '/class.wpes-analyzer-builder.php';
+abstract class WPES_Abstract_Field_Builder {
 
-class WPES_Abstract_Document_Builder {
+	abstract public function get_mappings( $args );
+	abstract public function get_all_fields( $args );
+	abstract public function get_update_script( $args );
 
 	private $utf8from;
-
-	abstract public function get_doc_id( $args );
-	abstract public function get_document_data( $args );
-	abstract public function get_update_data( $args );
-	abstract public function is_indexable( $args );
-
-	public function get_parent_doc_id( $args ) {
-		return false;
-	}
 
 	////////////////////////////
 	// Clean Input for ES indexing (prevent exceptions and failures)
@@ -30,8 +23,7 @@ class WPES_Abstract_Document_Builder {
 				break;
 		}
 
-		//convert content to utf-8 because non-utf8 chars will cause json_encode() to return null!
-		$to_utf8 = null;
+		//convert content to utf-8 because non-utf8 chars will cause json_encode() to return null		$to_utf8 = null;
 		if ( ! $to_utf8 )
 			$to_utf8 = Jetpack__To_UTF8::init();
 		$clean_obj = $to_utf8->convert( $obj );
@@ -148,5 +140,39 @@ class WPES_Abstract_Document_Builder {
 		return mb_convert_encoding( $string, 'UTF-8', $this->utf8from );
 	}
 
-}
+	//probably want to call clean_string() on any content passed into this function first
+	// handles word counts in multiple languages, but does not do a good job on mixed content (eg English and Japanese in one post)
+	public function word_count( $text, $lang ) {
+		$non_asian_char_pattern = '/([^\p{L}]|[a-zA-Z0-9])/u';
+		//The word to character ratios are based on the rates translators charge
+		//so, very approximate, especially for mixed text
+		switch ( $lang ) {
+			case 'zh':
+			case 'zh-tw':
+			case 'zh-hk':
+			case 'zh-cn':
+				//use a ratio of 1.5:1 chars per word
+				$clean_text = preg_replace( $non_asian_char_pattern, '', $text );
+				$wc = mb_strlen( $clean_text );
+				$wc = ceil( $wc / 1.5 ); //round up so if we have 1 char, then we'll always have 1 word
+				break;
+			case 'ja':
+				//use a ratio of 2.5:1 chars per word
+				$clean_text = preg_replace( $non_asian_char_pattern, '', $text );
+				$wc = mb_strlen( $clean_text );
+				$wc = ceil( $wc / 2.5 );
+				break;
+			case 'ko':
+				//use a ratio of 2:1 chars per word
+				$clean_text = preg_replace( $non_asian_char_pattern, '', $text );
+				$wc = mb_strlen( $clean_text );
+				$wc = ceil( $wc / 2 );
+				break;
+			default:
+				$wc = preg_match_all( '/\S+/u', $text );
+		}
 
+		return $wc;
+	}
+
+}
