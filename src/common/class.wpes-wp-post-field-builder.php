@@ -83,11 +83,11 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		
 				'post_id' => array( 
 					'type' => 'long', 
-					'store' => true
+					'store' => 'yes'
 				),
 				'blog_id' => array( 
 					'type' => 'integer',
-					'store' => true
+					'store' => 'yes'
 				),
 				'site_id' => array( 
 					'type' => 'short',
