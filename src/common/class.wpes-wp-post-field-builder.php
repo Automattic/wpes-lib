@@ -42,7 +42,26 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					"path_match" => "taxonomy.*.term_id",
 					"mapping" => array(
 						'type' => 'long',
-			) ) )
+			) ) ),
+			array(
+				"has_template" => array(
+					"path_match" => "has.*",
+					"mapping" => array(
+						'type' => 'short',
+			) ) ),
+			array(
+				"shortcode_args_template" => array(
+					"path_match" => "shortcode.*.id",
+					"mapping" => array(
+						'type' => 'string',
+						'index' => 'not_analyzed', 
+			) ) ),
+			array(
+				"shortcode_count_template" => array(
+					"path_match" => "shortcode.*.count",
+					"mapping" => array(
+						'type' => 'short',
+			) ) ),
 		);
 
 		if ( $args['index_meta'] ) {
