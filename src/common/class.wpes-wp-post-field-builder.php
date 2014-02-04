@@ -477,9 +477,9 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 	function post_fields( $post, $lang ) {
 		$user = get_userdata( $post->post_author );
 
-		$post_title = $this->clean_string( $post->post_title );
-		$post_content = $this->clean_string( $post->post_content );
-		$post_excerpt = $this->clean_string( $post->post_excerpt );
+		$post_title = $this->remove_shortcodes( $this->clean_string( $post->post_title ) );
+		$post_content = $this->remove_shortcodes( $this->clean_string( $post->post_content ) );
+		$post_excerpt = $this->remove_shortcodes( $this->clean_string( $post->post_excerpt ) );
 		$date_gmt = $this->clean_date( $post->post_date_gmt );
 
 		$data = array(

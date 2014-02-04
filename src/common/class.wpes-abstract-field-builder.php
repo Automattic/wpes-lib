@@ -39,8 +39,17 @@ abstract class WPES_Abstract_Field_Builder {
 
 		$clean_content = html_entity_decode( $clean_content );
 
+		return $clean_content;
+	}
+
+	protected function remove_shortcodes( $content ) {
 		//strip shortcodes but keep any content enclosed in the shortcodes
-		$clean_content = preg_replace("~(?:\[/?)[^/\]]+/?\]~s", '', $clean_content);
+		static $shortcode_pattern = null;
+		if ( null === $shortcode_pattern ) {
+			$shortcode_pattern = '/' . get_shortcode_regex() . '/s';
+		}
+
+		$clean_content = preg_replace( $shortcode_pattern, '', $content );
 
 		return $clean_content;
 	}
