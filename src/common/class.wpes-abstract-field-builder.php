@@ -49,7 +49,7 @@ abstract class WPES_Abstract_Field_Builder {
 			$shortcode_pattern = '/' . get_shortcode_regex() . '/s';
 		}
 
-		$clean_content = preg_replace( $shortcode_pattern, '', $content );
+		$clean_content = preg_replace( $shortcode_pattern, '$5', $content );
 
 		return $clean_content;
 	}
