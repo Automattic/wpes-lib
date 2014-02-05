@@ -499,22 +499,9 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $data;
 	}
 
-	function blog_lang( $blog_id ) {
-		$blog = get_blog_details( $blog_id );
-		$blog_lang = get_lang_code_by_id( $blog->lang_id );
-		$lang = $blog_lang;
-		if ( ! $lang ) {
-			//default to English since that is the WP default
-			$lang = 'en';
-		}
-		$lang_builder = new WPES_Analyzer_Builder();
-		$lang_analyzer = $lang_builder->get_analyzer_name( $lang );
-
-		$data = array(
-			'lang'         => $lang,
-			'lang_analyzer' => $lang_analyzer,
-		);
-		return $data;
+	public function blog_lang( $blog_id ) {
+		$fld_bldr = WPES_WP_Blog_Field_Builder();
+		return $fld_bldr->blog_lang( $blog_id );
 	}
 
 	public function taxonomy( $post ) {
@@ -560,12 +547,14 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $data;
 	}
 
-	public function meta( $post ) {
+	public function meta( $post, $blacklist = array() ) {
 		$data = array();
 		$meta = get_post_meta( $post->ID );
 		if ( !empty( $meta ) ) {
 			$data['meta'] = array();
 			foreach ( $meta as $key => $v ) {
+				if ( in_array( $key, $blacklist ) )
+					continue;
 				if ( !is_protected_meta( $key ) ) {
 					$clean_key = $this->clean_object( $key );
 					$clean_v = $this->clean_object( $v );
