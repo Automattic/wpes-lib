@@ -397,6 +397,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 	}
 
 	public function get_update_script( $args ) {
+		global $wpdb;
 		$update_script = array();
 
 		if ( count( $args['updates'] ) != 1 )
