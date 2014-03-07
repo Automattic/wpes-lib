@@ -501,7 +501,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 	}
 
 	public function blog_lang( $blog_id ) {
-		$fld_bldr = WPES_WP_Blog_Field_Builder();
+		$fld_bldr = new WPES_WP_Blog_Field_Builder();
 		return $fld_bldr->blog_lang( $blog_id );
 	}
 
