@@ -115,6 +115,13 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'string', 
 					'index' => 'not_analyzed' 
 				),
+				'post_status' => array( 
+					'type' => 'string', 
+					'index' => 'not_analyzed' 
+				),
+				'public' => array( 
+					'type' => 'boolean',
+				),
 				'lang' => array(
 					'type' => 'string',
 					'index' => 'not_analyzed',
@@ -437,10 +444,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $update_script;
 	}
 
-	function is_post_indexable( $blog_id, $post_id ) {
-		if ( $post_id == false )
-			return false;
-
+	function is_post_public( $blog_id, $post_id ) {
 		switch_to_blog( $blog_id );
 
 		$post = get_post( $post_id );
@@ -449,7 +453,9 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			return false;
 		}
 
-		if ( 'publish' != $post->post_status ) {
+		$public_stati = get_post_stati( array( 'public' => true ) );
+
+		if ( ! in_array( $post->post_status, $public_stati ) ) {
 			restore_current_blog();
 			return false;
 		}
@@ -475,6 +481,13 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $post_ok;
 	}
 
+	function is_post_indexable( $blog_id, $post_id ) {
+		if ( $post_id == false )
+			return false;
+
+		return $this->is_post_public( $blog_id, $post_id );
+	}
+
 	function post_fields( $post, $lang ) {
 		$user = get_userdata( $post->post_author );
 
@@ -486,6 +499,8 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		$data = array(
 			'post_id'      => $this->clean_long( $post->ID, 'post_id' ),
 			'post_type'    => $post->post_type,
+			'post_status'  => $post->post_status,
+			'public'       => (boolean) $this->is_post_public( $blog_id, $post->ID ),
 			'url'          => $this->remove_url_scheme( get_permalink( $post->ID ) ),
 			'date'         => $this->clean_date( $post->post_date ),
 			'date_gmt'     => $date_gmt,

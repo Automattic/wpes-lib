@@ -86,6 +86,13 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'string', 
 					'index' => 'not_analyzed' 
 				),
+				'comment_approved' => array( 
+					'type' => 'string', 
+					'index' => 'not_analyzed' 
+				),
+				'public' => array( 
+					'type' => 'boolean',
+				),
 				'lang' => array(
 					'type' => 'string',
 					'index' => 'not_analyzed',
@@ -289,10 +296,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $update_script;
 	}
 
-	function is_comment_indexable( $blog_id, $comment_id ) {
-		if ( $comment_id == false )
-			return false;
-
+	function is_comment_public( $blog_id, $comment_id ) {
 		switch_to_blog( $blog_id );
 
 		$comment = get_comment( $comment_id );
@@ -313,7 +317,15 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 			return false;
 		}
 
+		restore_current_blog();
 		return true;
+	}
+
+	function is_comment_indexable( $blog_id, $comment_id ) {
+		if ( $comment_id == false )
+			return false;
+
+		return $this->is_comment_public( $blog_id, $comment_id );
 	}
 
 	function comment_fields( $comment, $lang ) {
@@ -323,6 +335,9 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 		$data = array(
 			'comment_id'    => $this->clean_long( $comment->comment_ID, 'commend_id' ),
 			'post_id'       => $this->clean_long( $comment->comment_post_ID, 'comment_post_ID' ),
+			'comment_approved' => $comment->comment_approved,
+			'public'        => (boolean) $this->is_comment_public( $blog_id, $comment->comment_ID ),
+
 			'url'           => $this->remove_url_scheme( get_comment_link( $comment->comment_ID ) ),
 			'date'          => $this->clean_date( $comment->comment_date ),
 			'date_gmt'      => $date_gmt,
