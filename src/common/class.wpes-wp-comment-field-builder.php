@@ -33,7 +33,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 
 		if ( $args['index_meta'] ) {
 			$dynamic_templates[] = array(
-				"meta_template" => array(
+				"meta_str_template" => array(
 					"path_match" => "meta.*.value",
 					"mapping" => array(
 						'type' => 'multi_field', 
@@ -53,8 +53,28 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 							),
 						),
 					),
-				)
-			);
+			) );
+			$dynamic_templates[] = array(
+				"meta_long_template" => array(
+					"path_match" => "meta.*.long",
+					"mapping" => array(
+						'type' => 'long'
+					),
+			) );
+			$dynamic_templates[] = array(
+				"meta_bool_template" => array(
+					"path_match" => "meta.*.boolean",
+					"mapping" => array(
+						'type' => 'boolean'
+					),
+			) );
+			$dynamic_templates[] = array(
+				"meta_float_template" => array(
+					"path_match" => "meta.*.double",
+					"mapping" => array(
+						'type' => 'double'
+					),
+			) );
 		}
 	
 		//same mapping for both pages, posts, all custom post types
@@ -86,13 +106,14 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'string', 
 					'index' => 'not_analyzed' 
 				),
-				'comment_approved' => array( 
+				'comment_status' => array( 
 					'type' => 'string', 
 					'index' => 'not_analyzed' 
 				),
 				'public' => array( 
 					'type' => 'boolean',
 				),
+
 				'lang' => array(
 					'type' => 'string',
 					'index' => 'not_analyzed',
@@ -101,17 +122,93 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'string',
 					'index' => 'not_analyzed',
 				),
+
 				'url' => array( 
-					'type' => 'string', 
-					'index' => 'not_analyzed' 
+					'type' => 'multi_field', 
+					'fields' => array(
+						'url' => array(
+							'type' => 'string', 
+							'index' => 'analyzed',
+							'similarity' => 'BM25',
+						),
+						'raw' => array(
+							'type' => 'string', 
+							'index' => 'not_analyzed', 
+						),
+					),
 				),
+
 				'date' => array( 
-					'type' => 'date',
-					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+					'type' => 'object', 
+					'properties' => array(
+						'date' => array(
+							'type' => 'date',
+							'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+						),
+						'year' => array(
+							'type' => 'short'
+						),
+						'month' => array(
+							'type' => 'byte'
+						),
+						'day' => array(
+							'type' => 'byte'
+						),
+						'day_of_week' => array(
+							'type' => 'byte'
+						),
+						'week_of_year' => array(
+							'type' => 'byte'
+						),
+						'day_of_year' => array(
+							'type' => 'short'
+						),
+						'hour' => array(
+							'type' => 'byte'
+						),
+						'minute' => array(
+							'type' => 'byte'
+						),
+						'second' => array(
+							'type' => 'byte'
+						),
+					)
 				),
 				'date_gmt'  => array( 
-					'type' => 'date',
-					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+					'type' => 'object', 
+					'properties' => array(
+						'date_gmt' => array(
+							'type' => 'date',
+							'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+						),
+						'year' => array(
+							'type' => 'short'
+						),
+						'month' => array(
+							'type' => 'byte'
+						),
+						'day' => array(
+							'type' => 'byte'
+						),
+						'day_of_week' => array(
+							'type' => 'byte'
+						),
+						'week_of_year' => array(
+							'type' => 'byte'
+						),
+						'day_of_year' => array(
+							'type' => 'short'
+						),
+						'hour' => array(
+							'type' => 'byte'
+						),
+						'minute' => array(
+							'type' => 'byte'
+						),
+						'second' => array(
+							'type' => 'byte'
+						),
+					)
 				),
 		
 				//////////////////////////////////
@@ -138,18 +235,54 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 				'author_id' => array( 
 					'type' => 'integer'
 				),
-				'title'	=> array( 
+				'post_author_id' => array( 
+					'type' => 'integer'
+				),
+				'post_author_login' => array( 
 					'type' => 'string', 
-					'index' => 'analyzed', 
-					'similarity' => 'BM25',
+					'index' => 'not_analyzed'
+				),
+				'post_author' => array(
+					'type' => 'multi_field', 
+					'fields' => array(
+						'post_author' => array(
+							'type' => 'string', 
+							'index' => 'analyzed',
+							'similarity' => 'BM25',
+						),
+						'raw' => array(
+							'type' => 'string', 
+							'index' => 'not_analyzed', 
+						),
+					),
+				),
+				'title'	=> array( 
+					'type' => 'multi_field', 
+					'fields' => array(
+						'title' => array(
+							'type' => 'string', 
+							'index' => 'analyzed',
+							'similarity' => 'BM25',
+						),
+						'word_count' => array(
+							'type' => 'token_count',
+							'analyzer' => 'default',
+						),
+					),
 				),
 				'content'  => array( 
-					'type' => 'string', 
-					'index' => 'analyzed', 
-					'similarity' => 'BM25',
-				),
-				'content_word_count' => array( 
-					'type' => 'integer',
+					'type' => 'multi_field', 
+					'fields' => array(
+						'title' => array(
+							'type' => 'string', 
+							'index' => 'analyzed',
+							'similarity' => 'BM25',
+						),
+						'word_count' => array(
+							'type' => 'token_count',
+							'analyzer' => 'default',
+						),
+					),
 				),
 
 				//////////////////////////////////
@@ -244,6 +377,9 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 				'parent_comment_id' => array(
 					'type' => 'long', 
 				),
+				'ancestor_comment_ids' => array(
+					'type' => 'long', 
+				),
 			)
 		);
 
@@ -330,29 +466,33 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 
 	function comment_fields( $comment, $lang ) {
 		$content = $this->remove_shortcodes( $this->clean_string( $comment->comment_content ) );
-		$date_gmt = $this->clean_date( $comment->comment_date_gmt );
+
+		$comment_status = wp_get_comment_status( $comment->comment_ID );
+		if ( false == $comment_status )
+			$comment_status = 'none';
 
 		$data = array(
 			'comment_id'    => $this->clean_long( $comment->comment_ID, 'commend_id' ),
 			'post_id'       => $this->clean_long( $comment->comment_post_ID, 'comment_post_ID' ),
-			'comment_approved' => $comment->comment_approved,
+			'comment_status' => $comment_status,
 			'public'        => (boolean) $this->is_comment_public( $blog_id, $comment->comment_ID ),
 
 			'url'           => $this->remove_url_scheme( get_comment_link( $comment->comment_ID ) ),
-			'date'          => $this->clean_date( $comment->comment_date ),
-			'date_gmt'      => $date_gmt,
+			'date'          => $this->date_object( 'date', $comment->comment_date ),
+			'date_gmt'      => $this->date_object( 'date_gmt', $comment->comment_date_gmt ),
 			'content'       => $content,
 			'comment_type'  => $this->clean_string( $comment->comment_type ),
-			'content_word_count' => $this->clean_int( $this->word_count( $content, $lang ), 'word_count' ),
 		);
 
 		$author = $this->comment_author( $comment );
+		$post_author = $this->comment_author( $comment );
 		$data = array_merge( $data, $author );
 
 		if ( $comment->comment_parent ) {
 			$parent_comment = get_comment( $comment->comment_parent );
 			if ( $parent_comment ) {
 				$data['parent_comment_id'] = $this->clean_long( $comment->comment_parent );
+				$data['ancestor_comment_ids'] = $this->get_comment_ancestors( $comment->comment_ID );
 
 				$parent_author = $this->comment_author( $parent_comment );
 				$data['parent_commenter_id'] = $parent_author['author_id'];
@@ -365,6 +505,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 	public function comment_author( $comment ) {
 		if ( $comment->user_id ) {
 			$user = get_userdata( $comment->user_id );
+
 			$data = array(
 				'author'        => $this->clean_string( $user->display_name ),
 				'author_login'  => $this->clean_string( $user->user_login ),
@@ -376,6 +517,13 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 				'author_id'     => 0,
 			);
 		}
+
+		$post = get_post( $comment->comment_post_ID );
+		$post_user = get_userdata( $post->post_author );
+		$data['post_author'] = $this->clean_string( $post_user->display_name );
+		$data['post_author_login'] = $this->clean_string( $post_user->user_login );
+		$data['post_author_id'] = $this->clean_int( $post_user->ID, 'author_id' );
+
 		return $data;
 	}
 
@@ -388,9 +536,40 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 				if ( in_array( $key, $blacklist ) )
 					continue;
 				if ( !is_protected_meta( $key ) ) {
+					$unserialized = maybe_unserialize( $v ); //try one more unserialize op
+					if ( $this->is_assoc_array( $unserialized ) )
+						continue;
+
+					if ( is_object( $unserialized ) )
+						continue;
+
+					if ( $this->is_multi_dim_array( $unserialized ) )
+						continue;
+
 					$clean_key = $this->clean_object( $key );
-					$clean_v = $this->clean_object( $v );
-					$data['meta'][$clean_key] = array( 'value' => $clean_v );
+					if ( !is_array( $unserialized ) ) {
+						$unserialized = array( $unserialized );
+					}
+
+					$data['meta'][$clean_key] = array(
+						'value' => array(),
+						'long' => array(),
+						'double' => array(),
+						'boolean' => array(),
+					);
+					foreach ( $unserialized as $val ) {
+						$data['meta'][$clean_key]['value'][] = $this->clean_string( (string) $val );
+						$data['meta'][$clean_key]['long'][] = $this->clean_long( (int) $val );
+						$data['meta'][$clean_key]['double'][] = (float) $val;
+						if ( ( "false" === $val ) || ( "FALSE" === $val ) ) {
+							$bool = false;
+						} elseif ( ( 'true' === $val ) || ( 'TRUE' === $val ) ) {
+							$bool = true;
+						} else {
+							(boolean) $val;
+						}
+						$data['meta'][$clean_key]['boolean'][] = $bool;
+					}
 				}
 			}
 		}
@@ -425,6 +604,28 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 		}
 
 		return $data;
+	}
+
+	//based on get_post_ancestors()
+	function get_comment_ancestors( $comment_id ) {
+		$comment = get_comment( $comment_id );
+	
+		if ( ! $comment || empty( $comment->comment_parent ) || $comment->comment_parent == $comment->comment_ID )
+			return array();
+	
+		$ancestors = array();
+	
+		$id = $ancsetors[] = (int) $comment->comment_parent;
+	
+		while ( $ancestor = get_comment( $id ) ) {
+			// Loop detection: If the ancestor has been seen before, break.
+			if ( empty( $ancestor->comment_parent ) || ( $ancestor->comment_parent == $comment->comment_ID ) || in_array( $ancestor->comment_parent, $ancestors ) )
+				break;
+	
+			$id = $ancestors[] = (int) $ancestor->comment_parent;
+		}
+	
+		return $ancestors;
 	}
 
 }

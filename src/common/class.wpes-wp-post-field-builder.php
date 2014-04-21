@@ -66,7 +66,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 
 		if ( $args['index_meta'] ) {
 			$dynamic_post_templates[] = array(
-				"meta_template" => array(
+				"meta_str_template" => array(
 					"path_match" => "meta.*.value",
 					"mapping" => array(
 						'type' => 'multi_field', 
@@ -86,8 +86,28 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 							),
 						),
 					),
-				)
-			);
+			) );
+			$dynamic_post_templates[] = array(
+				"meta_long_template" => array(
+					"path_match" => "meta.*.long",
+					"mapping" => array(
+						'type' => 'long'
+					),
+			) );
+			$dynamic_post_templates[] = array(
+				"meta_bool_template" => array(
+					"path_match" => "meta.*.boolean",
+					"mapping" => array(
+						'type' => 'boolean'
+					),
+			) );
+			$dynamic_post_templates[] = array(
+				"meta_float_template" => array(
+					"path_match" => "meta.*.double",
+					"mapping" => array(
+						'type' => 'double'
+					),
+			) );
 		}
 	
 		//same mapping for both pages, posts, all custom post types
@@ -115,6 +135,10 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'string', 
 					'index' => 'not_analyzed' 
 				),
+				'post_format' => array( 
+					'type' => 'string', 
+					'index' => 'not_analyzed' 
+				),
 				'post_status' => array( 
 					'type' => 'string', 
 					'index' => 'not_analyzed' 
@@ -122,6 +146,21 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 				'public' => array( 
 					'type' => 'boolean',
 				),
+				'has_password' => array( 
+					'type' => 'boolean',
+				),
+
+				'parent_post_id' => array( 
+					'type' => 'long',
+				),
+				'ancestor_post_ids' => array( 
+					'type' => 'long',
+				),
+
+				'menu_order' => array(
+					'type' => 'integer',
+				),
+
 				'lang' => array(
 					'type' => 'string',
 					'index' => 'not_analyzed',
@@ -130,17 +169,172 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'string',
 					'index' => 'not_analyzed',
 				),
+
 				'url' => array( 
-					'type' => 'string', 
-					'index' => 'not_analyzed' 
+					'type' => 'multi_field', 
+					'fields' => array(
+						'url' => array(
+							'type' => 'string', 
+							'index' => 'analyzed',
+							'similarity' => 'BM25',
+						),
+						'raw' => array(
+							'type' => 'string', 
+							'index' => 'not_analyzed', 
+						),
+					),
 				),
+				'slug' => array(
+					'type' => 'string', 
+					'index' => 'not_analyzed', 
+				),
+
 				'date' => array( 
-					'type' => 'date',
-					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+					'type' => 'object', 
+					'properties' => array(
+						'date' => array(
+							'type' => 'date',
+							'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+						),
+						'year' => array(
+							'type' => 'short'
+						),
+						'month' => array(
+							'type' => 'byte'
+						),
+						'day' => array(
+							'type' => 'byte'
+						),
+						'day_of_week' => array(
+							'type' => 'byte'
+						),
+						'week_of_year' => array(
+							'type' => 'byte'
+						),
+						'day_of_year' => array(
+							'type' => 'short'
+						),
+						'hour' => array(
+							'type' => 'byte'
+						),
+						'minute' => array(
+							'type' => 'byte'
+						),
+						'second' => array(
+							'type' => 'byte'
+						),
+					)
 				),
 				'date_gmt'  => array( 
-					'type' => 'date',
-					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+					'type' => 'object', 
+					'properties' => array(
+						'date_gmt' => array(
+							'type' => 'date',
+							'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+						),
+						'year' => array(
+							'type' => 'short'
+						),
+						'month' => array(
+							'type' => 'byte'
+						),
+						'day' => array(
+							'type' => 'byte'
+						),
+						'day_of_week' => array(
+							'type' => 'byte'
+						),
+						'week_of_year' => array(
+							'type' => 'byte'
+						),
+						'day_of_year' => array(
+							'type' => 'short'
+						),
+						'hour' => array(
+							'type' => 'byte'
+						),
+						'minute' => array(
+							'type' => 'byte'
+						),
+						'second' => array(
+							'type' => 'byte'
+						),
+					)
+				),
+				'modified' => array( 
+					'type' => 'object', 
+					'properties' => array(
+						'modified' => array(
+							'type' => 'date',
+							'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+						),
+						'year' => array(
+							'type' => 'short'
+						),
+						'month' => array(
+							'type' => 'byte'
+						),
+						'day' => array(
+							'type' => 'byte'
+						),
+						'day_of_week' => array(
+							'type' => 'byte'
+						),
+						'week_of_year' => array(
+							'type' => 'byte'
+						),
+						'day_of_year' => array(
+							'type' => 'short'
+						),
+						'hour' => array(
+							'type' => 'byte'
+						),
+						'minute' => array(
+							'type' => 'byte'
+						),
+						'second' => array(
+							'type' => 'byte'
+						),
+					)
+				),
+				'modified_gmt'  => array( 
+					'type' => 'object', 
+					'properties' => array(
+						'modified_gmt' => array(
+							'type' => 'date',
+							'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+						),
+						'year' => array(
+							'type' => 'short'
+						),
+						'month' => array(
+							'type' => 'byte'
+						),
+						'day' => array(
+							'type' => 'byte'
+						),
+						'day_of_week' => array(
+							'type' => 'byte'
+						),
+						'week_of_year' => array(
+							'type' => 'byte'
+						),
+						'day_of_year' => array(
+							'type' => 'short'
+						),
+						'hour' => array(
+							'type' => 'byte'
+						),
+						'minute' => array(
+							'type' => 'byte'
+						),
+						'second' => array(
+							'type' => 'byte'
+						),
+					)
+				),
+				'sticky' => array( 
+					'type' => 'boolean', 
 				),
 		
 				//////////////////////////////////
@@ -168,22 +362,46 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'integer'
 				),
 				'title'	=> array( 
-					'type' => 'string', 
-					'index' => 'analyzed', 
-					'similarity' => 'BM25',
+					'type' => 'multi_field', 
+					'fields' => array(
+						'title' => array(
+							'type' => 'string', 
+							'index' => 'analyzed',
+							'similarity' => 'BM25',
+						),
+						'word_count' => array(
+							'type' => 'token_count',
+							'analyzer' => 'default',
+						),
+					),
 				),
 				'content'  => array( 
-					'type' => 'string', 
-					'index' => 'analyzed', 
-					'similarity' => 'BM25',
-				),
-				'content_word_count' => array( 
-					'type' => 'integer',
+					'type' => 'multi_field', 
+					'fields' => array(
+						'content' => array(
+							'type' => 'string', 
+							'index' => 'analyzed',
+							'similarity' => 'BM25',
+						),
+						'word_count' => array(
+							'type' => 'token_count',
+							'analyzer' => 'default',
+						),
+					),
 				),
 				'excerpt'  => array( 
-					'type' => 'string', 
-					'index' => 'analyzed', 
-					'similarity' => 'BM25',
+					'type' => 'multi_field', 
+					'fields' => array(
+						'title' => array(
+							'type' => 'string', 
+							'index' => 'analyzed',
+							'similarity' => 'BM25',
+						),
+						'word_count' => array(
+							'type' => 'token_count',
+							'analyzer' => 'default',
+						),
+					),
 				),
 				'tag_cat_count'   => array( 
 					'type' => 'short',
@@ -460,7 +678,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			return false;
 		}
 
-		if ( 0 < strlen( $post->post_password ) ) {
+		if ( strlen( $post->post_password ) > 0 ) {
 			restore_current_blog();
 			return false;
 		}
@@ -494,23 +712,35 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		$post_title = $this->remove_shortcodes( $this->clean_string( $post->post_title ) );
 		$post_content = $this->remove_shortcodes( $this->clean_string( $post->post_content ) );
 		$post_excerpt = $this->remove_shortcodes( $this->clean_string( $post->post_excerpt ) );
-		$date_gmt = $this->clean_date( $post->post_date_gmt );
+		
+		$format = get_post_format( $post->ID );
+		if ( false === $format ) {
+			$format = 'standard';
+		}
 
 		$data = array(
 			'post_id'      => $this->clean_long( $post->ID, 'post_id' ),
 			'post_type'    => $post->post_type,
+			'post_format'  => $format,
 			'post_status'  => $post->post_status,
+			'parent_post_id' => $post->post_parent,
+			'ancestor_post_ids' => get_post_ancestors( $post->ID ),
 			'public'       => (boolean) $this->is_post_public( $blog_id, $post->ID ),
+			'has_password' => ( strlen( $post->post_password ) > 0 ),
 			'url'          => $this->remove_url_scheme( get_permalink( $post->ID ) ),
-			'date'         => $this->clean_date( $post->post_date ),
-			'date_gmt'     => $date_gmt,
+			'slug'         => $post->post_name,
+			'date'         => $this->date_object( 'date', $post->post_date ),
+			'date_gmt'     => $this->date_object( 'date_gmt', $post->post_date_gmt ),
+			'modified'     => $this->date_object( 'modified', $post->post_modified ),
+			'modified_gmt' => $this->date_object( 'modified_gmt', $post->post_modified_gmt ),
+			'sticky'       => (boolean) is_sticky( $post->ID ),
 			'title'        => $post_title,
 			'content'      => $post_content,
 			'excerpt'      => $post_excerpt,
 			'author'       => $this->clean_string( $user->display_name ),
 			'author_login' => $this->clean_string( $user->user_login ),
 			'author_id'    => $this->clean_int( $user->ID, 'author_id' ),
-			'content_word_count' => $this->clean_int( $this->word_count( $post_content, $lang ), 'word_count' ),
+			'menu_order'   => $this->clean_int( $post->menu_order, 'menu_order' ),
 		);
 		return $data;
 	}
@@ -572,9 +802,40 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 				if ( in_array( $key, $blacklist ) )
 					continue;
 				if ( !is_protected_meta( $key ) ) {
+					$unserialized = maybe_unserialize( $v ); //try one more unserialize op
+					if ( $this->is_assoc_array( $unserialized ) )
+						continue;
+
+					if ( is_object( $unserialized ) )
+						continue;
+
+					if ( $this->is_multi_dim_array( $unserialized ) )
+						continue;
+
 					$clean_key = $this->clean_object( $key );
-					$clean_v = $this->clean_object( $v );
-					$data['meta'][$clean_key] = array( 'value' => $clean_v );
+					if ( !is_array( $unserialized ) ) {
+						$unserialized = array( $unserialized );
+					}
+
+					$data['meta'][$clean_key] = array(
+						'value' => array(),
+						'long' => array(),
+						'double' => array(),
+						'boolean' => array(),
+					);
+					foreach ( $unserialized as $val ) {
+						$data['meta'][$clean_key]['value'][] = $this->clean_string( (string) $val );
+						$data['meta'][$clean_key]['long'][] = $this->clean_long( (int) $val );
+						$data['meta'][$clean_key]['double'][] = (float) $val;
+						if ( ( "false" === $val ) || ( "FALSE" === $val ) ) {
+							$bool = false;
+						} elseif ( ( 'true' === $val ) || ( 'TRUE' === $val ) ) {
+							$bool = true;
+						} else {
+							(boolean) $val;
+						}
+						$data['meta'][$clean_key]['boolean'][] = $bool;
+					}
 				}
 			}
 		}

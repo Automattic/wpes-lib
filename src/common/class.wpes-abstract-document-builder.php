@@ -12,6 +12,11 @@ abstract class WPES_Abstract_Document_Builder {
 		return false;
 	}
 
+	//Is this entire set of docs disabled from being indexed
+	// eg this blog is spam, so none of its posts should be indexed
+	public function is_indexing_enabled( $args ) {
+		return true;
+	}
 
 }
 

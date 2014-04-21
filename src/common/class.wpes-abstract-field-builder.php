@@ -70,6 +70,10 @@ abstract class WPES_Abstract_Field_Builder {
 		$max = 32767; //Java max, don't rely on PHP max
 		return $this->clean_number( $val, $max, $field );
 	}
+	public function clean_byte( $val, $field ) {
+		$max = 127; //Java max, don't rely on PHP max
+		return $this->clean_number( $val, $max, $field );
+	}
 	private function clean_number( $val, $max, $field ) {
 		$v = intval( $val );
 		if ( $v > $max ) {
@@ -96,6 +100,20 @@ abstract class WPES_Abstract_Field_Builder {
 		return preg_replace( '/^[a-zA-z]+:\/\//', '', $url, 1 );
 	}
 
+	public function is_assoc_array( $arr ) {
+		for( reset( $arr ); is_int( key( $arr ) ); next( $arr) );
+		$is_assoc = !is_null( key( $arr ) );
+		reset( $arr );
+		return $is_assoc;
+	}
+
+	public function is_multi_dim_array( $arr ) {
+		foreach( $a as $v ) {
+			if ( is_array( $v ) )
+				return true;
+		}
+		return false;
+	}
 
 	////////////////////////////
 	// UTF8 conversion code
@@ -182,6 +200,26 @@ abstract class WPES_Abstract_Field_Builder {
 		}
 
 		return $wc;
+	}
+
+	public function date_object( $root_field, $date ) {
+		$clean_date = $this->clean_date( $date );
+		$parsed_date = date_parse( $clean_date );
+		$time = strtotime( $clean_date );
+		$data = array(
+			$root_field => $clean_date,
+			'year' => $this->clean_short( date( 'Y', $time ) ),
+			'month' => $this->clean_byte( date( 'n', $time ) ),
+			'day' => $this->clean_byte( date( 'j', $time ) ),
+			'day_of_week' => $this->clean_byte( date( 'N', $time ) ),
+			'day_of_year' => $this->clean_short( date( 'z', $time ) ),
+			'week_of_year' => $this->clean_byte( date( 'W', $time ) ),
+			'hour' => $this->clean_byte( date( 'G', $time ) ),
+			'minute' => $this->clean_byte( date( 'i', $time ) ),
+			'second' => $this->clean_byte( date( 's', $time ) ),
+		);
+
+		return $data;
 	}
 
 }
