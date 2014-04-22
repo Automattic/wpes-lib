@@ -108,7 +108,7 @@ abstract class WPES_Abstract_Field_Builder {
 	}
 
 	public function is_multi_dim_array( $arr ) {
-		foreach( $a as $v ) {
+		foreach( $arr as $v ) {
 			if ( is_array( $v ) )
 				return true;
 		}
@@ -202,21 +202,19 @@ abstract class WPES_Abstract_Field_Builder {
 		return $wc;
 	}
 
-	public function date_object( $root_field, $date ) {
-		$clean_date = $this->clean_date( $date );
+	public function date_object( $date ) {
 		$parsed_date = date_parse( $clean_date );
 		$time = strtotime( $clean_date );
 		$data = array(
-			$root_field => $clean_date,
-			'year' => $this->clean_short( date( 'Y', $time ) ),
-			'month' => $this->clean_byte( date( 'n', $time ) ),
-			'day' => $this->clean_byte( date( 'j', $time ) ),
-			'day_of_week' => $this->clean_byte( date( 'N', $time ) ),
-			'day_of_year' => $this->clean_short( date( 'z', $time ) ),
-			'week_of_year' => $this->clean_byte( date( 'W', $time ) ),
-			'hour' => $this->clean_byte( date( 'G', $time ) ),
-			'minute' => $this->clean_byte( date( 'i', $time ) ),
-			'second' => $this->clean_byte( date( 's', $time ) ),
+			'year' => $this->clean_short( date( 'Y', $time ), '.year' ),
+			'month' => $this->clean_byte( date( 'n', $time ), '.month' ),
+			'day' => $this->clean_byte( date( 'j', $time ), '.day' ),
+			'day_of_week' => $this->clean_byte( date( 'N', $time ), '.day_of_week' ),
+			'day_of_year' => $this->clean_short( date( 'z', $time ), '.day_of_year' ),
+			'week_of_year' => $this->clean_byte( date( 'W', $time ), '.week_of_year' ),
+			'hour' => $this->clean_byte( date( 'G', $time ), '.hour' ),
+			'minute' => $this->clean_byte( date( 'i', $time ), '.minute' ),
+			'second' => $this->clean_byte( date( 's', $time ), '.second' ),
 		);
 
 		return $data;

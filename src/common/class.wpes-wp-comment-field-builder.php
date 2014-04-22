@@ -139,12 +139,12 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 				),
 
 				'date' => array( 
+					'type' => 'date',
+					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+				),
+				'date_token' => array( 
 					'type' => 'object', 
 					'properties' => array(
-						'date' => array(
-							'type' => 'date',
-							'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
-						),
 						'year' => array(
 							'type' => 'short'
 						),
@@ -174,13 +174,13 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					)
 				),
-				'date_gmt'  => array( 
+				'date_gmt' => array( 
+					'type' => 'date',
+					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+				),
+				'date_gmt_token' => array( 
 					'type' => 'object', 
 					'properties' => array(
-						'date_gmt' => array(
-							'type' => 'date',
-							'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
-						),
 						'year' => array(
 							'type' => 'short'
 						),
@@ -478,8 +478,10 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 			'public'        => (boolean) $this->is_comment_public( $blog_id, $comment->comment_ID ),
 
 			'url'           => $this->remove_url_scheme( get_comment_link( $comment->comment_ID ) ),
-			'date'          => $this->date_object( 'date', $comment->comment_date ),
-			'date_gmt'      => $this->date_object( 'date_gmt', $comment->comment_date_gmt ),
+			'date'          => $this->clean_date( $comment->comment_date ),
+			'date_gmt'      => $this->clean_date( $comment->comment_date_gmt ),
+			'date_token'     => $this->date_object( $comment->comment_date ),
+			'date_gmt_token' => $this->date_object( $comment->comment_date_gmt ),
 			'content'       => $content,
 			'comment_type'  => $this->clean_string( $comment->comment_type ),
 		);
@@ -491,7 +493,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 		if ( $comment->comment_parent ) {
 			$parent_comment = get_comment( $comment->comment_parent );
 			if ( $parent_comment ) {
-				$data['parent_comment_id'] = $this->clean_long( $comment->comment_parent );
+				$data['parent_comment_id'] = $this->clean_long( $comment->comment_parent, 'comment_parent' );
 				$data['ancestor_comment_ids'] = $this->get_comment_ancestors( $comment->comment_ID );
 
 				$parent_author = $this->comment_author( $parent_comment );
@@ -543,7 +545,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 					if ( is_object( $unserialized ) )
 						continue;
 
-					if ( $this->is_multi_dim_array( $unserialized ) )
+					if ( is_array( $unserialized ) && $this->is_multi_dim_array( $unserialized ) )
 						continue;
 
 					$clean_key = $this->clean_object( $key );
@@ -559,7 +561,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 					);
 					foreach ( $unserialized as $val ) {
 						$data['meta'][$clean_key]['value'][] = $this->clean_string( (string) $val );
-						$data['meta'][$clean_key]['long'][] = $this->clean_long( (int) $val );
+						$data['meta'][$clean_key]['long'][] = $this->clean_long( (int) $val, 'meta.' . $clean_key . '.long' );
 						$data['meta'][$clean_key]['double'][] = (float) $val;
 						if ( ( "false" === $val ) || ( "FALSE" === $val ) ) {
 							$bool = false;

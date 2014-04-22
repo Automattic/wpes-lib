@@ -190,12 +190,12 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 				),
 
 				'date' => array( 
+					'type' => 'date',
+					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+				),
+				'date_token' => array( 
 					'type' => 'object', 
 					'properties' => array(
-						'date' => array(
-							'type' => 'date',
-							'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
-						),
 						'year' => array(
 							'type' => 'short'
 						),
@@ -225,13 +225,13 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					)
 				),
-				'date_gmt'  => array( 
+				'date_gmt' => array( 
+					'type' => 'date',
+					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+				),
+				'date_gmt_token' => array( 
 					'type' => 'object', 
 					'properties' => array(
-						'date_gmt' => array(
-							'type' => 'date',
-							'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
-						),
 						'year' => array(
 							'type' => 'short'
 						),
@@ -262,12 +262,12 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					)
 				),
 				'modified' => array( 
+					'type' => 'date',
+					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+				),
+				'modified_token' => array( 
 					'type' => 'object', 
 					'properties' => array(
-						'modified' => array(
-							'type' => 'date',
-							'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
-						),
 						'year' => array(
 							'type' => 'short'
 						),
@@ -297,13 +297,13 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					)
 				),
-				'modified_gmt'  => array( 
+				'modified_gmt' => array( 
+					'type' => 'date',
+					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
+				),
+				'modified_gmt_token' => array( 
 					'type' => 'object', 
 					'properties' => array(
-						'modified_gmt' => array(
-							'type' => 'date',
-							'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
-						),
 						'year' => array(
 							'type' => 'short'
 						),
@@ -333,6 +333,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					)
 				),
+
 				'sticky' => array( 
 					'type' => 'boolean', 
 				),
@@ -729,10 +730,14 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			'has_password' => ( strlen( $post->post_password ) > 0 ),
 			'url'          => $this->remove_url_scheme( get_permalink( $post->ID ) ),
 			'slug'         => $post->post_name,
-			'date'         => $this->date_object( 'date', $post->post_date ),
-			'date_gmt'     => $this->date_object( 'date_gmt', $post->post_date_gmt ),
-			'modified'     => $this->date_object( 'modified', $post->post_modified ),
-			'modified_gmt' => $this->date_object( 'modified_gmt', $post->post_modified_gmt ),
+			'date'          => $this->clean_date( $post->post_date ),
+			'date_gmt'      => $this->clean_date( $post->post_date_gmt ),
+			'date_token'     => $this->date_object( $post->post_date ),
+			'date_gmt_token' => $this->date_object( $post->post_date_gmt ),
+			'modified'          => $this->clean_date( $post->post_modified ),
+			'modified_gmt'      => $this->clean_date( $post->post_modified_gmt ),
+			'modified_token'     => $this->date_object( $post->post_modified ),
+			'modified_gmt_token' => $this->date_object( $post->post_modified_gmt ),
 			'sticky'       => (boolean) is_sticky( $post->ID ),
 			'title'        => $post_title,
 			'content'      => $post_content,
@@ -809,7 +814,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					if ( is_object( $unserialized ) )
 						continue;
 
-					if ( $this->is_multi_dim_array( $unserialized ) )
+					if ( is_array( $unserialized ) && $this->is_multi_dim_array( $unserialized ) )
 						continue;
 
 					$clean_key = $this->clean_object( $key );
@@ -825,7 +830,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					);
 					foreach ( $unserialized as $val ) {
 						$data['meta'][$clean_key]['value'][] = $this->clean_string( (string) $val );
-						$data['meta'][$clean_key]['long'][] = $this->clean_long( (int) $val );
+						$data['meta'][$clean_key]['long'][] = $this->clean_long( (int) $val, 'meta.' . $clean_key . '.long' );
 						$data['meta'][$clean_key]['double'][] = (float) $val;
 						if ( ( "false" === $val ) || ( "FALSE" === $val ) ) {
 							$bool = false;
