@@ -8,6 +8,10 @@ abstract class WPES_Abstract_Document_Builder {
 	abstract public function update( $args );
 	abstract public function is_indexable( $args );
 
+	public function filter_index_name( $index_name, $args ) {
+		return $index_name;
+	}
+
 	public function get_parent_id( $args ) {
 		return false;
 	}
@@ -17,6 +21,7 @@ abstract class WPES_Abstract_Document_Builder {
 	public function is_indexing_enabled( $args ) {
 		return true;
 	}
+
 
 }
 
