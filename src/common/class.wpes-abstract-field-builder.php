@@ -203,8 +203,7 @@ abstract class WPES_Abstract_Field_Builder {
 	}
 
 	public function date_object( $date ) {
-		$parsed_date = date_parse( $clean_date );
-		$time = strtotime( $clean_date );
+		$time = strtotime( $date );
 		$data = array(
 			'year' => $this->clean_short( date( 'Y', $time ), '.year' ),
 			'month' => $this->clean_byte( date( 'n', $time ), '.month' ),
