@@ -86,7 +86,7 @@ class WPES_WP_Post_Iterator extends WPES_Abstract_Iterator {
 		if ( $this->last_id >= $this->delete_last_id ) {
 			$delete_posts_struct['and'][1]['range']['post_id']['gte'] = $this->delete_last_id;
 			$this->delete_last_id = $this->last_id + ( ( $this->last_id - $this->first_id ) * $this->delete_batch_multiple );
-				$delete_posts_struct['and'][1]['range']['post_id']['lte'] = $delete_last_id;
+				$delete_posts_struct['and'][1]['range']['post_id']['lte'] = $this->delete_last_id;
 		} else {
 			$delete_posts_struct = false;
 		}

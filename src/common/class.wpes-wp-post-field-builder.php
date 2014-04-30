@@ -223,6 +223,12 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						'second' => array(
 							'type' => 'byte'
 						),
+						'seconds_from_day' => array(
+							'type' => 'integer'
+						),
+						'seconds_from_hour' => array(
+							'type' => 'short'
+						),
 					)
 				),
 				'date_gmt' => array( 
@@ -258,6 +264,12 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 						'second' => array(
 							'type' => 'byte'
+						),
+						'seconds_from_day' => array(
+							'type' => 'integer'
+						),
+						'seconds_from_hour' => array(
+							'type' => 'short'
 						),
 					)
 				),
@@ -295,6 +307,12 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						'second' => array(
 							'type' => 'byte'
 						),
+						'seconds_from_day' => array(
+							'type' => 'integer'
+						),
+						'seconds_from_hour' => array(
+							'type' => 'short'
+						),
 					)
 				),
 				'modified_gmt' => array( 
@@ -330,6 +348,12 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 						'second' => array(
 							'type' => 'byte'
+						),
+						'seconds_from_day' => array(
+							'type' => 'integer'
+						),
+						'seconds_from_hour' => array(
+							'type' => 'short'
 						),
 					)
 				),
@@ -393,7 +417,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 				'excerpt'  => array( 
 					'type' => 'multi_field', 
 					'fields' => array(
-						'title' => array(
+						'excerpt' => array(
 							'type' => 'string', 
 							'index' => 'analyzed',
 							'similarity' => 'BM25',

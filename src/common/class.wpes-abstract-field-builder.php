@@ -204,6 +204,8 @@ abstract class WPES_Abstract_Field_Builder {
 
 	public function date_object( $date ) {
 		$time = strtotime( $date );
+		$day_secs = $time - strtotime( date( 'Y-m-d 00:00:00', $time ) );
+		$hour_secs = $time - strtotime( date( 'Y-m-d H:00:00', $time ) );
 		$data = array(
 			'year' => $this->clean_short( date( 'Y', $time ), '.year' ),
 			'month' => $this->clean_byte( date( 'n', $time ), '.month' ),
@@ -214,8 +216,9 @@ abstract class WPES_Abstract_Field_Builder {
 			'hour' => $this->clean_byte( date( 'G', $time ), '.hour' ),
 			'minute' => $this->clean_byte( date( 'i', $time ), '.minute' ),
 			'second' => $this->clean_byte( date( 's', $time ), '.second' ),
+			'seconds_from_day' => $this->clean_int( $day_secs, '.seconds_from_day' ),
+			'seconds_from_hour' => $this->clean_short( $hour_secs, '.seconds_from_hour' ),
 		);
-
 		return $data;
 	}
 

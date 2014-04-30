@@ -32,8 +32,14 @@ abstract class WPES_Abstract_Iterator {
 
 		$this->doc_builder = $args['doc_builder'];
 		$this->curr_id = $args['start'];
+		$this->last_id = $args['start'] - 1;
 
 		return true;
+	}
+
+	public function set_batch_size( $size ) {
+		$this->batch_size = $size;
+		$this->target_batch_size = $size;
 	}
 
 	abstract public function count_potential_docs();
