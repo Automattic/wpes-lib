@@ -63,10 +63,19 @@ abstract class WPES_Abstract_Iterator {
 		return $this->done;
 	}
 
-	protected function update_batch_size( $doc_count, $iterator_count ) {
+	public function update_batch_size( $doc_count ) {
 		//reduce DB reads by adjusting the number of items we query for each time
+		if ( 0 == $doc_count )
+			$this->batch_size = $this->target_batch_size;
+		else
+			$this->batch_size = (int) ( $this->target_batch_size / ( $doc_count / $this->batch_size ) );
 
-		$this->batch_size = ( $doc_count / $iterator_count ) * $target_batch_size;
+		//impose some boundaries on how much the batch size gets adjusted
+		if ( $this->batch_size < $this->target_batch_size )
+			$this->batch_size = $this->target_batch_size;
+		if ( $this->batch_size > $this->target_batch_size * 5 )
+			$this->batch_size = $this->target_batch_size * 5;
+
 	}
 
 }
