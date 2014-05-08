@@ -294,6 +294,13 @@ class WPES_Analyzer_Builder {
 
 		$settings = array( 'filter' => array(), 'analyzer' => array() );
 
+		//$settings['filter']['bigram_filter'] = array( 
+		//	'type' => 'shingle',
+		//	'min_shingle_size' => 2,
+		//	'max_shingle_size' => 2,
+		//	'output_unigrams' => true
+		//);
+
 		//japanese needs custom tokenizer
 		if ( in_array( 'ja', $langs ) ) {
 			$settings['tokenizer'] = array(
@@ -306,13 +313,43 @@ class WPES_Analyzer_Builder {
 		foreach ( $langs as $lang ) {
 			$config = $this->supported_languages[$lang];
 			$settings['analyzer'][ $config['name'] ] = array(
-				'type' => $config['analyzer']
+				'type' => $config['analyzer'],
+				'filter' => array(),
 			);
+
+			////////////////////////////////
+			// Lang specific customizations
+
+			if ( 'zh' == $lang ) {
+				//chinese tokenizer splits sentences, this filter splits into words
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'smartcn_word';
+			}
+
+			if ( 'ja' == $lang ) {
+				////From: http://tech.gmo-media.jp/post/70245090007/elasticsearch-kuromoji-japanese-fulltext-search
+				$settings['analyzer'][ $config['name'] ]['tokenizer'] = $config['tokenizer'];
+				$settings['filter'][$lang . '_pos_filter'] = array(
+					'type' => "kuromoji_part_of_speech",
+					'stoptags' => array( "助詞-格助詞-一般", "助詞-終助詞" ),
+				);
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'kuromoji_baseform';
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'ja_pos_filter'; //stopwords
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'icu_normalizer';
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'icu_folding';
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'cjk_width';
+				continue;
+			}
+
+			/////////////////////////////////////////////////
+			//First filter is normalization
+			// normalization needs to be before stopwords so we combine UTF-8 characters (eg ê)
 			if ( $config['tokenizer'] ) {
 				$settings['analyzer'][ $config['name'] ]['tokenizer'] = $config['tokenizer'];
-				$settings['analyzer'][ $config['name'] ]['filter'] = array( 'icu_folding', 'icu_normalizer' );
-				$settings['analyzer'][ $config['name'] ]['char_filter'] = array( 'html_strip' );
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'icu_normalizer';
 			}
+			
+			//////////////
+			//Stopwords
 
 			if ( 'he' == $lang ) {
 				//hebrew has its own custom stopword list (no built in ES one)
@@ -322,10 +359,12 @@ class WPES_Analyzer_Builder {
 				);
 				$settings['analyzer'][ $config['name'] ]['filter'][] = $lang . '_stop_filter';
 			}
-			if ( 'zh' == $lang ) {
-				//chinese tokenizer splits sentences, this filter splits into words
-				$settings['analyzer'][ $config['name'] ]['filter'][] = 'smartcn_word';
+
+			if ( 'fr' == $lang ) {
+				//French has elision's that need to be removed
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'elision';
 			}
+
 			if ( $config['stopwords'] ) {
 				$settings['filter'][$lang . '_stop_filter'] = array(
 					'type' => 'stop',
@@ -334,6 +373,9 @@ class WPES_Analyzer_Builder {
 				$settings['analyzer'][ $config['name'] ]['filter'][] = $lang . '_stop_filter';
 			}
 
+			
+			////////////////
+			// Stemming
 			if ( $config['stemming'] ) {
 				$settings['filter'][ $lang . '_stem_filter' ] = array(
 					'type' => 'stemmer',
@@ -341,6 +383,16 @@ class WPES_Analyzer_Builder {
 				);
 				$settings['analyzer'][ $config['name'] ]['filter'][] = $lang . '_stem_filter';
 			}
+
+			/////////////////////////////////////////////////
+			//final filters (character folding and bigrams)
+			//  character folding must be after stopwords
+			if ( $config['tokenizer'] ) {
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'icu_folding';
+				//if ( 'lowercase' != $config['name'] )
+				//	$settings['analyzer'][ $config['name'] ]['filter'][] = 'bigram_filter';
+			}
+
 		}
 
 		return $settings;
