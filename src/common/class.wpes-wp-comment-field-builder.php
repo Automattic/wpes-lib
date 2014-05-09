@@ -9,7 +9,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 		);
 		$args = wp_parse_args( $args, $defaults );
 
-		$dynamic_templates = array( 
+		$dynamic_templates = array(
 			array(
 				"has_template" => array(
 					"path_match" => "has.*",
@@ -21,7 +21,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 					"path_match" => "shortcode.*.id",
 					"mapping" => array(
 						'type' => 'string',
-						'index' => 'not_analyzed', 
+						'index' => 'not_analyzed',
 			) ) ),
 			array(
 				"shortcode_count_template" => array(
@@ -36,19 +36,19 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 				"meta_str_template" => array(
 					"path_match" => "meta.*.value",
 					"mapping" => array(
-						'type' => 'multi_field', 
+						'type' => 'multi_field',
 						'fields' => array(
 							'value' => array(
-								'type' => 'string', 
+								'type' => 'string',
 								'index' => 'analyzed',
 							),
 							'raw' => array(
-								'type' => 'string', 
-								'index' => 'not_analyzed', 
+								'type' => 'string',
+								'index' => 'not_analyzed',
 							),
 							'raw_lc' => array(
-								'type' => 'string', 
-								'index' => 'analyzed', 
+								'type' => 'string',
+								'index' => 'analyzed',
 								'analyzer' => 'lowercase_analyzer'
 							),
 						),
@@ -76,41 +76,41 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 					),
 			) );
 		}
-	
+
 		//same mapping for both pages, posts, all custom post types
 		$comment_mapping = array(
 			'dynamic_templates' => $dynamic_templates,
 			'_all' => array( 'enabled' => $args['all_field_enabled'] ),
 			'_analyzer' => array( 'path' => 'lang_analyzer' ),
 			'properties' => array(
-		
+
 				//////////////////////////////////
 				//Blog/Post/Comment meta fields
-		
-				'comment_id' => array( 
-					'type' => 'long', 
+
+				'comment_id' => array(
+					'type' => 'long',
 					'store' => 'yes'
 				),
-				'post_id' => array( 
-					'type' => 'long', 
+				'post_id' => array(
+					'type' => 'long',
 					'store' => 'yes'
 				),
-				'blog_id' => array( 
+				'blog_id' => array(
 					'type' => 'integer',
 					'store' => 'yes'
 				),
-				'site_id' => array( 
+				'site_id' => array(
 					'type' => 'short',
 				),
-				'comment_type' => array( 
-					'type' => 'string', 
-					'index' => 'not_analyzed' 
+				'comment_type' => array(
+					'type' => 'string',
+					'index' => 'not_analyzed'
 				),
-				'comment_status' => array( 
-					'type' => 'string', 
-					'index' => 'not_analyzed' 
+				'comment_status' => array(
+					'type' => 'string',
+					'index' => 'not_analyzed'
 				),
-				'public' => array( 
+				'public' => array(
 					'type' => 'boolean',
 				),
 
@@ -123,27 +123,27 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 					'index' => 'not_analyzed',
 				),
 
-				'url' => array( 
-					'type' => 'multi_field', 
+				'url' => array(
+					'type' => 'multi_field',
 					'fields' => array(
 						'url' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
 						),
 						'raw' => array(
-							'type' => 'string', 
-							'index' => 'not_analyzed', 
+							'type' => 'string',
+							'index' => 'not_analyzed',
 						),
 					),
 				),
 
-				'date' => array( 
+				'date' => array(
 					'type' => 'date',
 					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
 				),
-				'date_token' => array( 
-					'type' => 'object', 
+				'date_token' => array(
+					'type' => 'object',
 					'properties' => array(
 						'year' => array(
 							'type' => 'short'
@@ -180,12 +180,12 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					)
 				),
-				'date_gmt' => array( 
+				'date_gmt' => array(
 					'type' => 'date',
 					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
 				),
-				'date_gmt_token' => array( 
-					'type' => 'object', 
+				'date_gmt_token' => array(
+					'type' => 'object',
 					'properties' => array(
 						'year' => array(
 							'type' => 'short'
@@ -222,59 +222,60 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					)
 				),
-		
+
 				//////////////////////////////////
 				//Post Content fields
-		
+
 				'author' => array(
-					'type' => 'multi_field', 
+					'type' => 'multi_field',
 					'fields' => array(
 						'author' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
 						),
 						'raw' => array(
-							'type' => 'string', 
-							'index' => 'not_analyzed', 
+							'type' => 'string',
+							'index' => 'not_analyzed',
 						),
 					),
 				),
-				'author_login' => array( 
-					'type' => 'string', 
+				'author_login' => array(
+					'type' => 'string',
 					'index' => 'not_analyzed'
 				),
-				'author_id' => array( 
+				'author_id' => array(
 					'type' => 'integer'
 				),
-				'post_author_id' => array( 
+				'post_author_id' => array(
 					'type' => 'integer'
 				),
-				'post_author_login' => array( 
-					'type' => 'string', 
+				'post_author_login' => array(
+					'type' => 'string',
 					'index' => 'not_analyzed'
 				),
 				'post_author' => array(
-					'type' => 'multi_field', 
+					'type' => 'multi_field',
 					'fields' => array(
 						'post_author' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
 						),
 						'raw' => array(
-							'type' => 'string', 
-							'index' => 'not_analyzed', 
+							'type' => 'string',
+							'index' => 'not_analyzed',
 						),
 					),
 				),
-				'title'	=> array( 
-					'type' => 'multi_field', 
+				'title'	=> array(
+					'type' => 'multi_field',
 					'fields' => array(
 						'title' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
+							'store' => 'yes',
 						),
 						'word_count' => array(
 							'type' => 'token_count',
@@ -282,13 +283,14 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					),
 				),
-				'content'  => array( 
-					'type' => 'multi_field', 
+				'content'  => array(
+					'type' => 'multi_field',
 					'fields' => array(
 						'content' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
+							'store' => 'yes',
 						),
 						'word_count' => array(
 							'type' => 'token_count',
@@ -299,33 +301,33 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 
 				//////////////////////////////////
 				//Embedded Media/Shortcodes/etc
-		
+
 				//has.* added as dynamic template
-		
+
 				'link' => array(
-					'type' => 'object', 
+					'type' => 'object',
 					'properties' => array(
 						'url' => array(
-							'type' => 'multi_field', 
+							'type' => 'multi_field',
 							'fields' => array(
 								'url' => array(
-									'type' => 'string', 
+									'type' => 'string',
 									'index' => 'analyzed', //default analyzer
 									'similarity' => 'BM25',
 								),
 								'raw' => array(
-									'type' => 'string', 
-									'index' => 'not_analyzed', 
+									'type' => 'string',
+									'index' => 'not_analyzed',
 								),
 							),
 						),
 						'host' => array(
-							'type' => 'string', 
-							'index' => 'not_analyzed', 
+							'type' => 'string',
+							'index' => 'not_analyzed',
 						),
 						'host_reversed' => array(
-							'type' => 'string', 
-							'index' => 'not_analyzed', 
+							'type' => 'string',
+							'index' => 'not_analyzed',
 						),
 					),
 				),
@@ -333,7 +335,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'object',
 					'properties' => array(
 						'url' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'not_analyzed',
 						),
 					),
@@ -346,7 +348,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'object',
 					'properties' => array(
 						'url' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'not_analyzed',
 						),
 					),
@@ -355,7 +357,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'object',
 					'properties' => array(
 						'name' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'not_analyzed',
 						),
 					),
@@ -364,14 +366,14 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'object',
 					'properties' => array(
 						'name' => array(
-							'type' => 'multi_field', 
+							'type' => 'multi_field',
 							'fields' => array(
 								'name' => array(
-									'type' => 'string', 
+									'type' => 'string',
 									'index' => 'not_analyzed',
 								),
 								'lc' => array(
-									'type' => 'string', 
+									'type' => 'string',
 									'index' => 'analyzed',
 									'analyzer' => 'lowercase_analyzer',
 								),
@@ -379,18 +381,18 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					),
 				),
-		
+
 				//////////////////////////////////
 				//Comment Threading
-		
+
 				'parent_commenter_id' => array(
-					'type' => 'integer', 
+					'type' => 'integer',
 				),
 				'parent_comment_id' => array(
-					'type' => 'long', 
+					'type' => 'long',
 				),
 				'ancestor_comment_ids' => array(
-					'type' => 'long', 
+					'type' => 'long',
 				),
 			)
 		);
@@ -428,11 +430,11 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 			$meta_data = array();
 		}
 
-		$data = array_merge( 
+		$data = array_merge(
 			$data,
 			$lang_data,
 			$comment_data,
-			$media_data, 
+			$media_data,
 			$meta_data
 		);
 		restore_current_blog();
@@ -580,7 +582,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 						} elseif ( ( 'true' === $val ) || ( 'TRUE' === $val ) ) {
 							$bool = true;
 						} else {
-							(boolean) $val;
+							$bool = (boolean) $val;
 						}
 						$data['meta'][$clean_key]['boolean'][] = $bool;
 					}
@@ -623,22 +625,22 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 	//based on get_post_ancestors()
 	function get_comment_ancestors( $comment_id ) {
 		$comment = get_comment( $comment_id );
-	
+
 		if ( ! $comment || empty( $comment->comment_parent ) || $comment->comment_parent == $comment->comment_ID )
 			return array();
-	
+
 		$ancestors = array();
-	
+
 		$id = $ancsetors[] = (int) $comment->comment_parent;
-	
+
 		while ( $ancestor = get_comment( $id ) ) {
 			// Loop detection: If the ancestor has been seen before, break.
 			if ( empty( $ancestor->comment_parent ) || ( $ancestor->comment_parent == $comment->comment_ID ) || in_array( $ancestor->comment_parent, $ancestors ) )
 				break;
-	
+
 			$id = $ancestors[] = (int) $ancestor->comment_parent;
 		}
-	
+
 		return $ancestors;
 	}
 

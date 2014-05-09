@@ -9,24 +9,24 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		);
 		$args = wp_parse_args( $args, $defaults );
 
-		$dynamic_post_templates = array( 
+		$dynamic_post_templates = array(
 			array(
 				"tax_template_name" => array(
 					"path_match" => "taxonomy.*.name",
 					"mapping" => array(
-						'type' => 'multi_field', 
+						'type' => 'multi_field',
 						'fields' => array(
 							'name' => array(
-								'type' => 'string', 
-								'index' => 'analyzed', 
+								'type' => 'string',
+								'index' => 'analyzed',
 							),
 							'raw' => array(
-								'type' => 'string', 
-								'index' => 'not_analyzed', 
+								'type' => 'string',
+								'index' => 'not_analyzed',
 							),
 							'raw_lc' => array(
-								'type' => 'string', 
-								'index' => 'analyzed', 
+								'type' => 'string',
+								'index' => 'analyzed',
 								'analyzer' => 'lowercase_analyzer',
 							),
 			) ) ) ),
@@ -34,8 +34,8 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 				"tax_template_slug" => array(
 					"path_match" => "taxonomy.*.slug",
 					"mapping" => array(
-						'type' => 'string', 
-						'index' => 'not_analyzed', 
+						'type' => 'string',
+						'index' => 'not_analyzed',
 			) ) ),
 			array(
 				"tax_template_term_id" => array(
@@ -54,7 +54,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					"path_match" => "shortcode.*.id",
 					"mapping" => array(
 						'type' => 'string',
-						'index' => 'not_analyzed', 
+						'index' => 'not_analyzed',
 			) ) ),
 			array(
 				"shortcode_count_template" => array(
@@ -69,19 +69,19 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 				"meta_str_template" => array(
 					"path_match" => "meta.*.value",
 					"mapping" => array(
-						'type' => 'multi_field', 
+						'type' => 'multi_field',
 						'fields' => array(
 							'value' => array(
-								'type' => 'string', 
+								'type' => 'string',
 								'index' => 'analyzed',
 							),
 							'raw' => array(
-								'type' => 'string', 
-								'index' => 'not_analyzed', 
+								'type' => 'string',
+								'index' => 'not_analyzed',
 							),
 							'raw_lc' => array(
-								'type' => 'string', 
-								'index' => 'analyzed', 
+								'type' => 'string',
+								'index' => 'analyzed',
 								'analyzer' => 'lowercase_analyzer'
 							),
 						),
@@ -109,51 +109,51 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					),
 			) );
 		}
-	
+
 		//same mapping for both pages, posts, all custom post types
 		$post_mapping = array(
 			'dynamic_templates' => $dynamic_post_templates,
 			'_all' => array( 'enabled' => $args['all_field_enabled'] ),
 			'_analyzer' => array( 'path' => 'lang_analyzer' ),
 			'properties' => array(
-		
+
 				//////////////////////////////////
 				//Blog/Post meta fields
-		
-				'post_id' => array( 
-					'type' => 'long', 
+
+				'post_id' => array(
+					'type' => 'long',
 					'store' => 'yes'
 				),
-				'blog_id' => array( 
+				'blog_id' => array(
 					'type' => 'integer',
 					'store' => 'yes'
 				),
-				'site_id' => array( 
+				'site_id' => array(
 					'type' => 'short',
 				),
-				'post_type' => array( 
-					'type' => 'string', 
-					'index' => 'not_analyzed' 
+				'post_type' => array(
+					'type' => 'string',
+					'index' => 'not_analyzed'
 				),
-				'post_format' => array( 
-					'type' => 'string', 
-					'index' => 'not_analyzed' 
+				'post_format' => array(
+					'type' => 'string',
+					'index' => 'not_analyzed'
 				),
-				'post_status' => array( 
-					'type' => 'string', 
-					'index' => 'not_analyzed' 
+				'post_status' => array(
+					'type' => 'string',
+					'index' => 'not_analyzed'
 				),
-				'public' => array( 
+				'public' => array(
 					'type' => 'boolean',
 				),
-				'has_password' => array( 
+				'has_password' => array(
 					'type' => 'boolean',
 				),
 
-				'parent_post_id' => array( 
+				'parent_post_id' => array(
 					'type' => 'long',
 				),
-				'ancestor_post_ids' => array( 
+				'ancestor_post_ids' => array(
 					'type' => 'long',
 				),
 
@@ -170,31 +170,31 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					'index' => 'not_analyzed',
 				),
 
-				'url' => array( 
-					'type' => 'multi_field', 
+				'url' => array(
+					'type' => 'multi_field',
 					'fields' => array(
 						'url' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
 						),
 						'raw' => array(
-							'type' => 'string', 
-							'index' => 'not_analyzed', 
+							'type' => 'string',
+							'index' => 'not_analyzed',
 						),
 					),
 				),
 				'slug' => array(
-					'type' => 'string', 
-					'index' => 'not_analyzed', 
+					'type' => 'string',
+					'index' => 'not_analyzed',
 				),
 
-				'date' => array( 
+				'date' => array(
 					'type' => 'date',
 					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
 				),
-				'date_token' => array( 
-					'type' => 'object', 
+				'date_token' => array(
+					'type' => 'object',
 					'properties' => array(
 						'year' => array(
 							'type' => 'short'
@@ -231,12 +231,12 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					)
 				),
-				'date_gmt' => array( 
+				'date_gmt' => array(
 					'type' => 'date',
 					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
 				),
-				'date_gmt_token' => array( 
-					'type' => 'object', 
+				'date_gmt_token' => array(
+					'type' => 'object',
 					'properties' => array(
 						'year' => array(
 							'type' => 'short'
@@ -273,12 +273,12 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					)
 				),
-				'modified' => array( 
+				'modified' => array(
 					'type' => 'date',
 					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
 				),
-				'modified_token' => array( 
-					'type' => 'object', 
+				'modified_token' => array(
+					'type' => 'object',
 					'properties' => array(
 						'year' => array(
 							'type' => 'short'
@@ -315,12 +315,12 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					)
 				),
-				'modified_gmt' => array( 
+				'modified_gmt' => array(
 					'type' => 'date',
 					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
 				),
-				'modified_gmt_token' => array( 
-					'type' => 'object', 
+				'modified_gmt_token' => array(
+					'type' => 'object',
 					'properties' => array(
 						'year' => array(
 							'type' => 'short'
@@ -358,41 +358,42 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					)
 				),
 
-				'sticky' => array( 
-					'type' => 'boolean', 
+				'sticky' => array(
+					'type' => 'boolean',
 				),
-		
+
 				//////////////////////////////////
 				//Post Content fields
-		
+
 				'author' => array(
-					'type' => 'multi_field', 
+					'type' => 'multi_field',
 					'fields' => array(
 						'author' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
 						),
 						'raw' => array(
-							'type' => 'string', 
-							'index' => 'not_analyzed', 
+							'type' => 'string',
+							'index' => 'not_analyzed',
 						),
 					),
 				),
-				'author_login' => array( 
-					'type' => 'string', 
+				'author_login' => array(
+					'type' => 'string',
 					'index' => 'not_analyzed'
 				),
-				'author_id' => array( 
+				'author_id' => array(
 					'type' => 'integer'
 				),
-				'title'	=> array( 
-					'type' => 'multi_field', 
+				'title'	=> array(
+					'type' => 'multi_field',
 					'fields' => array(
 						'title' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
+							'store' => 'yes',
 						),
 						'word_count' => array(
 							'type' => 'token_count',
@@ -400,13 +401,14 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					),
 				),
-				'content'  => array( 
-					'type' => 'multi_field', 
+				'content'  => array(
+					'type' => 'multi_field',
 					'fields' => array(
 						'content' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
+							'store' => 'yes',
 						),
 						'word_count' => array(
 							'type' => 'token_count',
@@ -414,13 +416,14 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					),
 				),
-				'excerpt'  => array( 
-					'type' => 'multi_field', 
+				'excerpt'  => array(
+					'type' => 'multi_field',
 					'fields' => array(
 						'excerpt' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
+							'store' => 'yes',
 						),
 						'word_count' => array(
 							'type' => 'token_count',
@@ -428,109 +431,111 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					),
 				),
-				'tag_cat_count'   => array( 
+				'tag_cat_count'   => array(
 					'type' => 'short',
 				),
 				'tag' => array(
-					'type' => 'object', 
+					'type' => 'object',
 					'properties' => array(
 						'name' => array(
-							'type' => 'multi_field', 
+							'type' => 'multi_field',
 							'fields' => array(
 								'name' => array(
-									'type' => 'string', 
-									'index' => 'analyzed', 
+									'type' => 'string',
+									'index' => 'analyzed',
 									'index_name' => 'tag',
 									'similarity' => 'BM25',
+									'store' => 'yes',
 								),
 								'raw' => array(
-									'type' => 'string', 
-									'index' => 'not_analyzed', 
+									'type' => 'string',
+									'index' => 'not_analyzed',
 									'index_name' => 'tag.raw',
 								),
 								'raw_lc' => array(
-									'type' => 'string', 
-									'index' => 'analyzed', 
+									'type' => 'string',
+									'index' => 'analyzed',
 									'analyzer' => 'lowercase_analyzer',
 									'index_name' => 'tag.raw_lc',
 								),
 							),
 						),
 						'slug' => array(
-							'type' => 'string', 
-							'index' => 'not_analyzed', 
+							'type' => 'string',
+							'index' => 'not_analyzed',
 						),
 						'term_id' => array(
-							'type' => 'long', 
+							'type' => 'long',
 						),
 					),
 				),
 				'category' => array(
-					'type' => 'object', 
+					'type' => 'object',
 					'properties' => array(
 						'name' => array(
-							'type' => 'multi_field', 
+							'type' => 'multi_field',
 							'fields' => array(
 								'name' => array(
-									'type' => 'string', 
-									'index' => 'analyzed', 
+									'type' => 'string',
+									'index' => 'analyzed',
 									'index_name' => 'category',
 									'similarity' => 'BM25',
+									'store' => 'yes',
 								),
 								'raw' => array(
-									'type' => 'string', 
-									'index' => 'not_analyzed', 
+									'type' => 'string',
+									'index' => 'not_analyzed',
 									'index_name' => 'category.raw',
 								),
 								'raw_lc' => array(
-									'type' => 'string', 
-									'index' => 'analyzed', 
+									'type' => 'string',
+									'index' => 'analyzed',
 									'analyzer' => 'lowercase_analyzer',
 									'index_name' => 'category.raw_lc',
 								),
 							),
 						),
 						'slug' => array(
-							'type' => 'string', 
-							'index' => 'not_analyzed', 
+							'type' => 'string',
+							'index' => 'not_analyzed',
 						),
 						'term_id' => array(
-							'type' => 'long', 
+							'type' => 'long',
 						),
 					),
 				),
-		
+
 				//taxonomy.*.* added as dynamic template
 
 				//////////////////////////////////
 				//Embedded Media/Shortcodes/etc
-		
+
 				//has.* added as dynamic template
-		
+
 				'link' => array(
-					'type' => 'object', 
+					'type' => 'object',
 					'properties' => array(
 						'url' => array(
-							'type' => 'multi_field', 
+							'type' => 'multi_field',
 							'fields' => array(
 								'url' => array(
-									'type' => 'string', 
+									'type' => 'string',
 									'index' => 'analyzed', //default analyzer
 									'similarity' => 'BM25',
 								),
 								'raw' => array(
-									'type' => 'string', 
-									'index' => 'not_analyzed', 
+									'type' => 'string',
+									'index' => 'not_analyzed',
 								),
 							),
 						),
 						'host' => array(
-							'type' => 'string', 
-							'index' => 'not_analyzed', 
+							'type' => 'string',
+							'index' => 'not_analyzed',
 						),
 						'host_reversed' => array(
-							'type' => 'string', 
-							'index' => 'not_analyzed', 
+							'type' => 'string',
+							'index' => 'not_analyzed',
 						),
 					),
 				),
@@ -538,7 +543,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'object',
 					'properties' => array(
 						'url' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'not_analyzed',
 						),
 					),
@@ -551,7 +556,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'object',
 					'properties' => array(
 						'url' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'not_analyzed',
 						),
 					),
@@ -560,7 +565,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'object',
 					'properties' => array(
 						'name' => array(
-							'type' => 'string', 
+							'type' => 'string',
 							'index' => 'not_analyzed',
 						),
 					),
@@ -569,14 +574,14 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					'type' => 'object',
 					'properties' => array(
 						'name' => array(
-							'type' => 'multi_field', 
+							'type' => 'multi_field',
 							'fields' => array(
 								'name' => array(
-									'type' => 'string', 
+									'type' => 'string',
 									'index' => 'not_analyzed',
 								),
 								'lc' => array(
-									'type' => 'string', 
+									'type' => 'string',
 									'index' => 'analyzed',
 									'analyzer' => 'lowercase_analyzer',
 								),
@@ -584,12 +589,12 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					),
 				),
-		
+
 				//////////////////////////////////
 				//Comments
-		
+
 				'commenter_ids' => array(
-					'type' => 'integer', 
+					'type' => 'integer',
 				),
 				'comment_count' => array(
 					'type' => 'integer',
@@ -632,14 +637,14 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			$meta_data = array();
 		}
 
-		$data = array_merge( 
+		$data = array_merge(
 			$data,
 			$lang_data,
 			$post_data,
-			$tax_data, 
-			$commenters_data, 
-			$media_data, 
-			$feat_img_data, 
+			$tax_data,
+			$commenters_data,
+			$media_data,
+			$feat_img_data,
 			$meta_data
 		);
 		restore_current_blog();
@@ -707,15 +712,15 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			restore_current_blog();
 			return false;
 		}
-	
+
 		$blog_details = get_blog_details( $blog_id );
-	
+
 		$post_ok = true;
 		$post_type_obj = get_post_type_object( $post->post_type );
 		if ( $post_type_obj->exclude_from_search ) {
 			$post_ok = false;
 		}
-	
+
 		if ( ! $post_type_obj->public ) {
 			$post_ok = false;
 		}
@@ -737,7 +742,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		$post_title = $this->remove_shortcodes( $this->clean_string( $post->post_title ) );
 		$post_content = $this->remove_shortcodes( $this->clean_string( $post->post_content ) );
 		$post_excerpt = $this->remove_shortcodes( $this->clean_string( $post->post_excerpt ) );
-		
+
 		$format = get_post_format( $post->ID );
 		if ( false === $format ) {
 			$format = 'standard';
@@ -861,7 +866,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						} elseif ( ( 'true' === $val ) || ( 'TRUE' === $val ) ) {
 							$bool = true;
 						} else {
-							(boolean) $val;
+							$bool = (boolean) $val;
 						}
 						$data['meta'][$clean_key]['boolean'][] = $bool;
 					}
