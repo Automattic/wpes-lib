@@ -33,6 +33,7 @@ abstract class WPES_Abstract_Iterator {
 		$this->doc_builder = $args['doc_builder'];
 		$this->curr_id = $args['start'];
 		$this->last_id = $args['start'] - 1;
+		$this->delete_last_id = $args['start'];
 
 		return true;
 	}
