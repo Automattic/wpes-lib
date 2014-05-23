@@ -393,7 +393,6 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
-							'store' => 'yes',
 						),
 						'word_count' => array(
 							'type' => 'token_count',
@@ -408,7 +407,6 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
-							'store' => 'yes',
 						),
 						'word_count' => array(
 							'type' => 'token_count',
@@ -423,7 +421,6 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
-							'store' => 'yes',
 						),
 						'word_count' => array(
 							'type' => 'token_count',
@@ -445,7 +442,6 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 									'index' => 'analyzed',
 									'index_name' => 'tag',
 									'similarity' => 'BM25',
-									'store' => 'yes',
 								),
 								'raw' => array(
 									'type' => 'string',
@@ -480,7 +476,6 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 									'index' => 'analyzed',
 									'index_name' => 'category',
 									'similarity' => 'BM25',
-									'store' => 'yes',
 								),
 								'raw' => array(
 									'type' => 'string',

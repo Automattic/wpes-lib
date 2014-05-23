@@ -275,7 +275,6 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
-							'store' => 'yes',
 						),
 						'word_count' => array(
 							'type' => 'token_count',
@@ -290,7 +289,6 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 							'type' => 'string',
 							'index' => 'analyzed',
 							'similarity' => 'BM25',
-							'store' => 'yes',
 						),
 						'word_count' => array(
 							'type' => 'token_count',
