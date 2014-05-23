@@ -340,6 +340,29 @@ class WPES_Analyzer_Builder {
 				continue;
 			}
 
+			if ( 'de' == $lang ) {
+				////From: http://gibrown.wordpress.com/2013/05/01/three-principles-for-multilingal-indexing-in-elasticsearch/#comment-857
+				$settings['analyzer'][ $config['name'] ]['tokenizer'] = $config['tokenizer'];
+				$settings['filter'][$lang . '_stop_filter'] = array(
+					'type' => 'stop',
+					'stopwords' => array( $config['stopwords'] )
+				);
+				$settings['filter'][ $lang . '_stem_filter' ] = array(
+					'type' => 'stemmer',
+					'name' => $config['stemming']
+				);
+				$settings['char_filter'][$lang . '_char_filter'] = array(
+					'type' => "mapping",
+					'mappings' => array( 'ß=>ss', 'Ä=>ae', 'ä=>ae', 'Ö=>oe', 'ö=>oe', 'Ü=>ue', 'ü=>ue', 'ph=>f' ),
+				);
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'icu_normalizer';
+				$settings['analyzer'][ $config['name'] ]['filter'][] = $lang . '_stop_filter';
+				$settings['analyzer'][ $config['name'] ]['filter'][] = $lang . '_stem_filter';
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'icu_folding';
+				$settings['analyzer'][ $config['name'] ]['char_filter'] = array( $lang . '_char_filter' );
+				continue;
+			}
+
 			/////////////////////////////////////////////////
 			//First filter is normalization
 			// normalization needs to be before stopwords so we combine UTF-8 characters (eg ê)
@@ -347,7 +370,7 @@ class WPES_Analyzer_Builder {
 				$settings['analyzer'][ $config['name'] ]['tokenizer'] = $config['tokenizer'];
 				$settings['analyzer'][ $config['name'] ]['filter'][] = 'icu_normalizer';
 			}
-			
+
 			//////////////
 			//Stopwords
 
@@ -358,6 +381,11 @@ class WPES_Analyzer_Builder {
 					'stopwords' => $this->get_hebrew_stopwords()
 				);
 				$settings['analyzer'][ $config['name'] ]['filter'][] = $lang . '_stop_filter';
+			}
+
+			if ( 'fr' == $lang ) {
+				//French has elision's that need to be removed
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'elision';
 			}
 
 			if ( 'fr' == $lang ) {
