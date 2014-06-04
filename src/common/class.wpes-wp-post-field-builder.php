@@ -657,29 +657,37 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			switch ( $op ) {
 				case 'add_comment' :
 					$user_id = $update_args;
+					$post = get_blog_post( $args['blog_id'], $args['id'] );
+					if ( !$post )
+						return array();
 					if ( $user_id ) {
 						$update_script['script'] = 'if ( !ctx._source.commenter_ids.contains(commenter) ) { ctx._source.commenter_ids += commenter; } ctx._source.comment_count = ctx._source.comment_count + 1;';
-						$update_script['params'] = array( "commenter" => $update_args );
+						$update_script['params'] = array( "commenter" => $update_args, 'count' => $post->comment_count );
 					} else {
-						$update_script['script'] = 'ctx._source.comment_count = ctx._source.comment_count + 1;';
+						$update_script['script'] = 'ctx._source.comment_count = count;';
+						$update_script['params'] = array( 'count' => $post->comment_count );
 					}
 					break;
 				case 'remove_comment' :
 					$remove = false;
 					$user_id = $update_args;
 					$blog_details = get_blog_details( $blog_id );
+					$post = get_blog_post( $args['blog_id'], $args['id'] );
+					if ( !$post )
+						return array();
 					if ( $user_id ) { //user_id 0 is never in the list
 						//check whether this commenter has any approved comments left on the post
-							$comment_id = $wpdb->get_var( $wpdb->prepare( 'SELECT comment_ID FROM wp_%d_comments WHERE comment_post_ID = %d AND user_id = %d AND comment_approved = "1" LIMIT 1', $blog_id, $id, $user_id ) );
-							if ( !$comment_id )
-								$remove = true;
+						$comment_id = $wpdb->get_var( $wpdb->prepare( 'SELECT comment_ID FROM wp_%d_comments WHERE comment_post_ID = %d AND user_id = %d AND comment_approved = "1" LIMIT 1', $args['blog_id'], $args['id'], $user_id ) );
+						if ( !$comment_id )
+							$remove = true;
 					}
 
 					if ( $remove ) {
-						$update_script['script'] = 'if ( ctx._source.commenter_ids.contains(commenter) ) { idx = ctx._source.commenter_ids.indexOf(commenter); ctx._source.commenter_ids.remove(idx); } ctx._source.comment_count = ctx._source.comment_count - 1;';
-						$update_script['params'] = array( "commenter" => $user_id );
+						$update_script['script'] = 'if ( ctx._source.commenter_ids.contains(commenter) ) { idx = ctx._source.commenter_ids.indexOf(commenter); ctx._source.commenter_ids.remove(idx); } ctx._source.comment_count = count;';
+						$update_script['params'] = array( "commenter" => $update_args, 'count' => $post->comment_count );
 					} else {
-						$update_script['script'] = 'ctx._source.comment_count = ctx._source.comment_count - 1;';
+						$update_script['script'] = 'ctx._source.comment_count = count;';
+						$update_script['params'] = array( 'count' => $post->comment_count );
 					}
 					break;
 			}
