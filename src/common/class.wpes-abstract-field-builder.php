@@ -31,13 +31,16 @@ abstract class WPES_Abstract_Field_Builder {
 		return $clean_obj;
 	}
 
-	protected function clean_string( $content ) {
+	protected function clean_string( $content, $truncate_at = 100000 ) {
 		//convert content to utf-8 because non-utf8 chars will cause json_encode() to return null!
 		$clean_content = $this->convert_to_utf8( $content );
 
 		$clean_content = strip_tags( $clean_content );
 
 		$clean_content = html_entity_decode( $clean_content );
+
+		if ( 0 < $truncate_at && mb_strlen( $clean_content ) > $truncate_at )
+			$clean_content = mb_substr( $clean_content, 0, $truncate_at );
 
 		return $clean_content;
 	}
@@ -97,7 +100,7 @@ abstract class WPES_Abstract_Field_Builder {
 	}
 
 	public function remove_url_scheme( $url ) {
-		return preg_replace( '/^[a-zA-z]+:\/\//', '', $url, 1 );
+		return preg_replace( '/^[a-zA-z]+:\/\//', '', $this->convert_to_utf8( $url ), 1 );
 	}
 
 	public function is_assoc_array( $arr ) {
