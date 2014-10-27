@@ -40,7 +40,6 @@ abstract class WPES_Abstract_Iterator {
 
 	public function set_batch_size( $size ) {
 		$this->batch_size = $size;
-		$this->target_batch_size = $size;
 	}
 
 	abstract public function count_potential_docs();
@@ -69,15 +68,11 @@ abstract class WPES_Abstract_Iterator {
 		if ( 0 == $doc_count )
 			$this->batch_size = $this->target_batch_size;
 		else
-			$this->batch_size = (int) ( $this->target_batch_size / ( $doc_count / $this->batch_size ) );
+			$this->batch_size = ceil( $this->batch_size * 1.2 ); // scale up 20% at a time
 
 		//impose some boundaries on how much the batch size gets adjusted
-		if ( $this->batch_size < $this->target_batch_size )
-			$this->batch_size = $this->target_batch_size;
 		if ( $this->batch_size > $this->target_batch_size * 5 )
 			$this->batch_size = $this->target_batch_size * 5;
-
 	}
-
 }
 

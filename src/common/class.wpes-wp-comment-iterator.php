@@ -5,7 +5,7 @@ class WPES_WP_Comment_Iterator extends WPES_Abstract_Iterator {
 
 	var $blog_id = null;
 	var $sql_where = '';
-	
+
 	public function init( $args ) {
 		$defaults = array(
 			'blog_id' => false,
@@ -23,10 +23,10 @@ class WPES_WP_Comment_Iterator extends WPES_Abstract_Iterator {
 	public function get_ids( $doc_args ) {
 		global $wpdb;
 		$this->curr_id = $this->last_id + 1;
-		if ( '' == $where )
-			$where =  'comment_ID >= ' . ( (int) $this->curr_id );
+		if ( '' == $this->sql_where )
+			$where =  ' comment_ID >= ' . ( (int) $this->curr_id );
 		else
-			$where =  $this->sql_where . 'AND comment_ID >= ' . ( (int) $this->curr_id );
+			$where =  $this->sql_where . ' AND comment_ID >= ' . ( (int) $this->curr_id );
 
 		$query = $wpdb->prepare(
 			"SELECT comment_ID FROM wp_%d_comments WHERE $where" .
@@ -60,12 +60,11 @@ class WPES_WP_Comment_Iterator extends WPES_Abstract_Iterator {
 
 	public function count_potential_docs() {
 		global $wpdb;
-		$where =  $this->sql_where;
 
-		if ( '' == $where )
+		if ( '' == $this->sql_where )
 			$q = "SELECT COUNT(comment_ID) FROM wp_%d_comments";
 		else
-			$q = "SELECT COUNT(comment_ID) FROM wp_%d_comments WHERE $where";
+			$q = "SELECT COUNT(comment_ID) FROM wp_%d_comments WHERE {$this->sql_where}";
 
 		$query = $wpdb->prepare( $q, $this->blog_id );
 		$cnt = $wpdb->get_var( $query );
@@ -75,8 +74,8 @@ class WPES_WP_Comment_Iterator extends WPES_Abstract_Iterator {
 
 	public function get_pre_delete_filter() {
 		$delete_posts_struct = array( 'and' => array(
-			array( 'term' => array( 'blog_id' => $this->blog_id ) ),
-			array( 'range' => array( 'commment_id' => array( 'gte' => 0 ) ) ),
+			array( 'term' => array( 'blog_id' => $this->blog_id, '_cache' => false ) ),
+			array( 'range' => array( 'comment_id' => array( 'gte' => 0 ) ) ),
 		) );
 		return $delete_posts_struct;
 	}
@@ -84,13 +83,13 @@ class WPES_WP_Comment_Iterator extends WPES_Abstract_Iterator {
 	public function get_delete_filter() {
 		$delete_posts_struct = $this->get_pre_delete_filter();
 
-		if ( $this->last_id >= $this->delete_last_id ) {
-			$delete_posts_struct['and'][1]['range']['commment_id']['gte'] = $this->delete_last_id;
-			$this->delete_last_id = $this->last_id + ( ( $this->last_id - $this->first_id ) * $this->delete_batch_multiple );
-				$delete_posts_struct['and'][1]['range']['commment_id']['lte'] = $this->delete_last_id;
-		} else {
-			$delete_posts_struct = false;
-		}
+		if ( $this->curr_id < $this->delete_last_id )
+			$this->delete_last_id = $this->curr_id;
+		else
+			$this->delete_last_id++;
+		$delete_posts_struct['and'][1]['range']['comment_id']['gte'] = (int) $this->delete_last_id;
+		$this->delete_last_id = $this->last_id;
+		$delete_posts_struct['and'][1]['range']['comment_id']['lte'] = (int) $this->delete_last_id;
 
 		return $delete_posts_struct;
 	}
@@ -98,7 +97,7 @@ class WPES_WP_Comment_Iterator extends WPES_Abstract_Iterator {
 	public function get_post_delete_filter() {
 		$delete_posts_struct = $this->get_pre_delete_filter();
 
-		$delete_posts_struct['and'][1]['range']['commment_id']['gte'] = $this->delete_last_id;
+		$delete_posts_struct['and'][1]['range']['comment_id']['gte'] = (int) $this->delete_last_id;
 
 		return $delete_posts_struct;
 	}
