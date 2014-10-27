@@ -661,7 +661,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					if ( !$post )
 						return array();
 					if ( $user_id ) {
-						$update_script['script'] = 'if ( !ctx._source.commenter_ids.contains(commenter) ) { ctx._source.commenter_ids += commenter; } ctx._source.comment_count = ctx._source.comment_count + 1;';
+						$update_script['script'] = 'if ( !ctx._source.commenter_ids.contains(commenter) ) { ctx._source.commenter_ids += commenter; } ctx._source.comment_count = count;';
 						$update_script['params'] = array( "commenter" => $update_args, 'count' => $post->comment_count );
 					} else {
 						$update_script['script'] = 'ctx._source.comment_count = count;';
@@ -740,6 +740,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 	}
 
 	function post_fields( $post, $lang ) {
+		$blog_id = get_current_blog_id();
 		$user = get_userdata( $post->post_author );
 
 		$post_title = $this->remove_shortcodes( $this->clean_string( $post->post_title ) );
@@ -774,17 +775,26 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			'title'        => $post_title,
 			'content'      => $post_content,
 			'excerpt'      => $post_excerpt,
-			'author'       => $this->clean_string( $user->display_name ),
-			'author_login' => $this->clean_string( $user->user_login ),
-			'author_id'    => $this->clean_int( $user->ID, 'author_id' ),
 			'menu_order'   => $this->clean_int( $post->menu_order, 'menu_order' ),
 		);
+
+		$author_data = $this->post_author( $blog_id, $post );
+		$data = array_merge( $data, $author_data );
+
 		return $data;
 	}
 
 	public function blog_lang( $blog_id ) {
 		$fld_bldr = new WPES_WP_Blog_Field_Builder();
 		return $fld_bldr->blog_lang( $blog_id );
+	}
+
+	public function post_author( $blog_id, $post ) {
+		$post_user = get_userdata( $post->post_author );
+		$data['author'] = $this->clean_string( $post_user->display_name );
+		$data['author_login'] = $this->clean_string( $post_user->user_login );
+		$data['author_id'] = $this->clean_int( $post_user->ID, 'author_id' );
+		return $data;
 	}
 
 	public function taxonomy( $post ) {
@@ -803,8 +813,8 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 				$tax_list[$tax] = array();
 
 			$tax_list[$tax][] = array(
-				'name' => $this->clean_string( $term->name ),
-				'slug' => $this->clean_string( $term->slug ), //clean in case of non utf-8
+				'name' => $this->clean_string( $term->name, 1024 ), // Limit at 1KB -- overkill varchar at 200
+				'slug' => $this->clean_string( $term->slug, 1024 ), //clean in case of non utf-8
 				'term_id' => $term->term_id
 			);
 		}
@@ -830,7 +840,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $data;
 	}
 
-	public function meta( $post, $blacklist = array() ) {
+	public function meta( $post, $blacklist = array(), $whitelist = array() ) {
 		$data = array();
 		$meta = get_post_meta( $post->ID );
 		if ( !empty( $meta ) ) {
@@ -838,7 +848,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			foreach ( $meta as $key => $v ) {
 				if ( in_array( $key, $blacklist ) )
 					continue;
-				if ( !is_protected_meta( $key ) ) {
+				if ( in_array( $key, $whitelist ) || !is_protected_meta( $key ) ) {
 					$unserialized = maybe_unserialize( $v ); //try one more unserialize op
 					if ( $this->is_assoc_array( $unserialized ) )
 						continue;
@@ -861,7 +871,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						'boolean' => array(),
 					);
 					foreach ( $unserialized as $val ) {
-						$data['meta'][$clean_key]['value'][] = $this->clean_string( (string) $val );
+						$data['meta'][$clean_key]['value'][] = $this->clean_string( (string) $val, 4096 ); // limit at 4KB
 						$data['meta'][$clean_key]['long'][] = $this->clean_long( (int) $val, 'meta.' . $clean_key . '.long' );
 						$data['meta'][$clean_key]['double'][] = (float) $val;
 						if ( ( "false" === $val ) || ( "FALSE" === $val ) ) {
@@ -934,6 +944,12 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		if ( isset( $data['shortcode'] ) ) {
 			foreach ( $data['shortcode'] as $code => $obj) {
 				$data['shortcode'][$code]['count'] = $this->clean_short( $obj['count'], 'shortcode.' . $code . '.count' );
+			}
+		}
+		//clean urls (we don't want the scheme so we can do prefix matching)
+		if ( isset( $data['image'] ) ) {
+			foreach ( $data['image'] as $idx => $obj) {
+				$data['image'][$idx]['url'] = $this->remove_url_scheme( $obj['url'] );
 			}
 		}
 

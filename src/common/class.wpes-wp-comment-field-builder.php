@@ -441,6 +441,30 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 
 	public function get_update_script( $args ) {
 		$update_script = array();
+
+		foreach ( $args['updates'] as $op => $update_args ) {
+			switch ( $op ) {
+				case 'update_status' :
+					switch_to_blog( $args['blog_id'] );
+					$comment_status = wp_get_comment_status( $args['id'] );
+					if ( false == $comment_status )
+						$comment_status = 'none';
+
+					$update_script['doc']['comment_status'] = $comment_status;
+					restore_current_blog();
+					break;
+				case 'update_public' :
+					$update_script['doc']['public'] = (boolean) $this->is_comment_public( $args['blog_id'], $args['id'] );
+					break;
+				case 'update_post_author' :
+					switch_to_blog( $args['blog_id'] );
+					$comment = get_comment( $args['id'] );
+					$update_script['doc'] = array_merge( $this->post_author( $args['blog_id'], $comment ), $update_script['doc'] );
+					restore_current_blog();
+					break;
+			}
+		}
+
 		return $update_script;
 	}
 
@@ -458,15 +482,19 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 			return false;
 		}
 
-		//verify that parent post is indexable
-		$wp_post_bldr = new WPES_WP_Post_Field_Builder();
-		if ( !$wp_post_bldr->is_post_indexable( $blog_id, $comment->comment_post_ID ) ) {
+		//verify that parent post is public
+		if ( !$this->is_post_public( $blog_id, $comment->comment_post_ID ) ) {
 			restore_current_blog();
 			return false;
 		}
 
 		restore_current_blog();
 		return true;
+	}
+
+	function is_post_public( $blog_id, $post_id ) {
+		$wp_post_bldr = new WPES_WP_Post_Field_Builder();
+		return $wp_post_bldr->is_post_public( $blog_id, $post_id );
 	}
 
 	function is_comment_indexable( $blog_id, $comment_id ) {
@@ -477,6 +505,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 	}
 
 	function comment_fields( $comment, $lang ) {
+		global $blog_id;
 		$content = $this->remove_shortcodes( $this->clean_string( $comment->comment_content ) );
 
 		$comment_status = wp_get_comment_status( $comment->comment_ID );
@@ -499,8 +528,8 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 		);
 
 		$author = $this->comment_author( $comment );
-		$post_author = $this->comment_author( $comment );
-		$data = array_merge( $data, $author );
+		$post_author = $this->post_author( $blog_id, $comment );
+		$data = array_merge( $data, $author, $post_author );
 
 		if ( $comment->comment_parent ) {
 			$parent_comment = get_comment( $comment->comment_parent );
@@ -532,13 +561,17 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 			);
 		}
 
-		$post = get_post( $comment->comment_post_ID );
-		$post_user = get_userdata( $post->post_author );
-		$data['post_author'] = $this->clean_string( $post_user->display_name );
-		$data['post_author_login'] = $this->clean_string( $post_user->user_login );
-		$data['post_author_id'] = $this->clean_int( $post_user->ID, 'author_id' );
-
 		return $data;
+	}
+
+	public function post_author( $blog_id, $comment ) {
+		$fld_bldr = new WPES_WP_Post_Field_Builder();
+		$post = get_post( $comment->comment_post_ID );
+		$data = $fld_bldr->post_author( $blog_id, $post );
+		$comment_data['post_author'] = $data['author'];
+		$comment_data['post_author_login'] = $data['author_login'];
+		$comment_data['post_author_id'] = $data['author_id'];
+		return $comment_data;
 	}
 
 	public function meta( $comment, $blacklist = array() ) {
@@ -616,6 +649,18 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 				$data['shortcode'][$code]['count'] = $this->clean_short( $obj['count'], 'shortcode.' . $code . '.count' );
 			}
 		}
+		//clean urls (we don't want the scheme so we can do prefix matching)
+		if ( isset( $data['image'] ) ) {
+			foreach ( $data['image'] as $idx => $obj) {
+				$data['image'][$idx]['url'] = $this->remove_url_scheme( $obj['url'] );
+			}
+		}
+		//clean urls to get rid of non utf-8 chars
+		if ( isset( $data['link'] ) ) {
+			foreach ( $data['link'] as $idx => $obj) {
+				$data['link'][$idx]['url'] = $this->remove_url_scheme( $obj['url'] );
+			}
+		}
 
 		return $data;
 	}
@@ -643,4 +688,3 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 	}
 
 }
-
