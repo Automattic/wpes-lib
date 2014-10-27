@@ -231,7 +231,7 @@ class WPES_Analyzer_Builder {
 		'zh' => array(  //uses a hidden markov model and dictionary to segment into words
 			'name'      => 'zh_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'smartcn_sentence', 
+			'tokenizer' => 'smartcn_tokenizer',
 			'stopwords' => null, 
 			'stemming'  => null 
 		),
@@ -319,11 +319,6 @@ class WPES_Analyzer_Builder {
 
 			////////////////////////////////
 			// Lang specific customizations
-
-			if ( 'zh' == $lang ) {
-				//chinese tokenizer splits sentences, this filter splits into words
-				$settings['analyzer'][ $config['name'] ]['filter'][] = 'smartcn_word';
-			}
 
 			if ( 'ja' == $lang ) {
 				////From: http://tech.gmo-media.jp/post/70245090007/elasticsearch-kuromoji-japanese-fulltext-search
