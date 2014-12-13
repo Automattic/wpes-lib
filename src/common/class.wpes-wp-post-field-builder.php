@@ -873,7 +873,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					foreach ( $unserialized as $val ) {
 						$data['meta'][$clean_key]['value'][] = $this->clean_string( (string) $val, 4096 ); // limit at 4KB
 						$data['meta'][$clean_key]['long'][] = $this->clean_long( (int) $val, 'meta.' . $clean_key . '.long' );
-						$data['meta'][$clean_key]['double'][] = (float) $val;
+						$data['meta'][$clean_key]['double'][] = $this->clean_float( $val );
 						if ( ( "false" === $val ) || ( "FALSE" === $val ) ) {
 							$bool = false;
 						} elseif ( ( 'true' === $val ) || ( 'TRUE' === $val ) ) {

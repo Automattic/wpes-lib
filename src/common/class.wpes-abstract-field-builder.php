@@ -86,6 +86,14 @@ abstract class WPES_Abstract_Field_Builder {
 		return $v;
 	}
 
+	public function clean_float( $val ) {
+		$v = (float) $val;
+		if ( is_finite( $v ) ) {
+			return $v;
+		}
+		return 0;
+	}
+
 	public function clean_date( $date_str ) {
 		$dd = (int) substr( $date_str, 8, 2 );
 		$mm = (int) substr( $date_str, 5, 2 );
