@@ -534,6 +534,127 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					),
 				),
+				'attachment' => array(
+					'type' => 'object',
+					'properties' => array(
+						'url' => array(
+							'type' => 'string',
+							'index' => 'not_analyzed',
+						),
+						// @question Can we create a custom analyzer that splits input into tokens only
+						// on the '/' character? Would that be a better solution than just creating
+						// three distinct mime-related fields?
+						'mime' => array(
+							'type' => 'string',
+							'index' => 'not_analyzed',
+						),
+						'mime_type' => array(
+							'type' => 'string',
+							'index' => 'not_analyzed',
+						),
+						'mime_subtype' => array(
+							'type' => 'string',
+							'index' => 'not_analyzed',
+						),
+						// This is post_title in the DB
+						'title'	=> array(
+							'type' => 'multi_field',
+							'fields' => array(
+								'title' => array(
+									'type' => 'string',
+									'index' => 'analyzed',
+									'similarity' => 'BM25',
+								),
+								'word_count' => array(
+									'type' => 'token_count',
+									'analyzer' => 'default',
+								),
+							),
+						),
+						// This is post_content in the DB
+						'description' => array(
+							'type' => 'multi_field',
+							'fields' => array(
+								'content' => array(
+									'type' => 'string',
+									'index' => 'analyzed',
+									'similarity' => 'BM25',
+								),
+								'word_count' => array(
+									'type' => 'token_count',
+									'analyzer' => 'default',
+								),
+							),
+						),
+						// This is post_excerpt in the DB
+						'caption' => array(
+							'type' => 'multi_field',
+							'fields' => array(
+								'excerpt' => array(
+									'type' => 'string',
+									'index' => 'analyzed',
+									'similarity' => 'BM25',
+								),
+								'word_count' => array(
+									'type' => 'token_count',
+									'analyzer' => 'default',
+								),
+							),
+						),
+						// @question Did I construct this correctly?
+						'dimensions_token' => array(
+							'type' => 'object',
+							'properties' => array(
+								'width' => array(
+									'type' => 'short',
+								),
+								'height' => array(
+									'type' => 'short',
+								),
+								'area' => array(
+									'type' => 'integer',
+								),
+							),
+						),
+						'grayscale' => array(
+							'type' => 'boolean',
+						),
+						'alpha' => array(
+							'type' => 'boolean',
+						),
+						// @note This simply stores the name of dominant color as a string
+						// Uses 16 HTML colors: http://www.wikiwand.com/en/Web_colors#/HTML_color_names
+						// + the orange color from CSS 2.1: http://www.wikiwand.com/en/Web_colors#/CSS_colors
+						//
+						// @question Do we need this? Can we query the color_token below to get the same information?
+						'primary_color_name' => array(
+							'type' => 'string',
+							'index' => 'not_analyzed',
+						),
+						// @note This stores all found color accents from N samples. Allows us to make more
+						// specfic searches, e.g. find black images with just a hint of orange and red.
+						//
+						// The script will first convert the image to a mosaic of N areas. Then it will take
+						// a sample pixel from each area and convert it to one of the 17 basic colors.
+						// The dominance field is just a percentage of samples that fell into a particular bucket.
+						'color_token' => array(
+							// @question I believe we need the nested type here as custom queries for
+							// a dominant color will need to query these properties within a single object
+							//
+							// @todo We might consider using a much more fine tuned approach here.
+							// A good study material: http://dpb587.me/blog/2014/04/24/color-searching-with-elasticsearch.html
+							'type' => 'nested',
+							'properties' => array(
+								'name' => array(
+									'type' => 'byte'
+								),
+								'dominance' => array(
+									'type' => 'byte'
+								),
+							),
+						),
+					),
+				),
 				'image' => array(
 					'type' => 'object',
 					'properties' => array(
