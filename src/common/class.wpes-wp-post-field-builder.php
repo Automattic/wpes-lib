@@ -534,29 +534,26 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						),
 					),
 				),
-				'attachment' => array(
-					'type' => 'object',
+				'image' => array(
+					'type' => 'nested',
 					'properties' => array(
 						'url' => array(
 							'type' => 'string',
 							'index' => 'not_analyzed',
 						),
-						// @question Can we create a custom analyzer that splits input into tokens only
-						// on the '/' character? Would that be a better solution than just creating
-						// three distinct mime-related fields?
-						'mime' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
 						'mime_type' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
+							'type' => 'multi_field',
+							'fields' => array(
+								'name' => array(
+									'type' => 'string',
+									'index' => 'lowercase_analyzer',
+								),
+								'raw' => array(
+									'type' => 'string',
+									'index' => 'not_analyzed',
+								),
+							),
 						),
-						'mime_subtype' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
-						// This is post_title in the DB
 						'title'	=> array(
 							'type' => 'multi_field',
 							'fields' => array(
@@ -601,7 +598,6 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 								),
 							),
 						),
-						// @question Did I construct this correctly?
 						'dimensions_token' => array(
 							'type' => 'object',
 							'properties' => array(
@@ -616,51 +612,28 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 								),
 							),
 						),
-						'grayscale' => array(
+						'is_grayscale' => array(
 							'type' => 'boolean',
 						),
-						'alpha' => array(
+						'has_transparency' => array(
 							'type' => 'boolean',
 						),
-						// @note This simply stores the name of dominant color as a string
-						// Uses 16 HTML colors: http://www.wikiwand.com/en/Web_colors#/HTML_color_names
-						// + the orange color from CSS 2.1: http://www.wikiwand.com/en/Web_colors#/CSS_colors
-						//
-						// @question Do we need this? Can we query the color_token below to get the same information?
-						'primary_color_name' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
-						// @note This stores all found color accents from N samples. Allows us to make more
-						// specfic searches, e.g. find black images with just a hint of orange and red.
-						//
-						// The script will first convert the image to a mosaic of N areas. Then it will take
-						// a sample pixel from each area and convert it to one of the 17 basic colors.
-						// The dominance field is just a percentage of samples that fell into a particular bucket.
 						'color_token' => array(
-							// @question I believe we need the nested type here as custom queries for
-							// a dominant color will need to query these properties within a single object
-							//
-							// @todo We might consider using a much more fine tuned approach here.
-							// A good study material: http://dpb587.me/blog/2014/04/24/color-searching-with-elasticsearch.html
-							'type' => 'nested',
+							'type' => 'object',
 							'properties' => array(
-								'name' => array(
-									'type' => 'byte'
+								'hue' => array(
+									'type' => 'short'
+								),
+								'saturation' => array(
+									'type' => 'short'
+								),
+								'value' => array(
+									'type' => 'short'
 								),
 								'dominance' => array(
 									'type' => 'byte'
 								),
 							),
-						),
-					),
-				),
-				'image' => array(
-					'type' => 'object',
-					'properties' => array(
-						'url' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
 						),
 					),
 				),
@@ -1070,7 +1043,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		//clean urls (we don't want the scheme so we can do prefix matching)
 		if ( isset( $data['image'] ) ) {
 			foreach ( $data['image'] as $idx => $obj) {
-				$data['image'][$idx]['url'] = $this->remove_url_scheme( $obj['url'] );
+				$data['image'][$idx]['url'] = $this->remove_url_scheme( $obj['src'] );
 			}
 		}
 
