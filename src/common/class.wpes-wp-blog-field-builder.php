@@ -18,7 +18,7 @@ class WPES_WP_Blog_Field_Builder extends WPES_Abstract_Field_Builder {
 
 	function blog_lang( $blog_id ) {
 		$blog = get_blog_details( $blog_id );
-		$blog_lang = get_lang_code_by_id( $blog->lang_id );
+		$blog_lang = 'en'; // get_lang_code_by_id( $blog->lang_id );
 		$lang = $blog_lang;
 		if ( ! $lang ) {
 			//default to English since that is the WP default

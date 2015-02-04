@@ -537,11 +537,105 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					),
 				),
 				'image' => array(
-					'type' => 'object',
+					'type' => 'nested',
 					'properties' => array(
 						'url' => array(
 							'type' => 'string',
 							'index' => 'not_analyzed',
+						),
+						'mime_type' => array(
+							'type' => 'multi_field',
+							'fields' => array(
+								'name' => array(
+									'type' => 'string',
+									'index' => 'lowercase_analyzer',
+								),
+								'raw' => array(
+									'type' => 'string',
+									'index' => 'not_analyzed',
+								),
+							),
+						),
+						'title'	=> array(
+							'type' => 'multi_field',
+							'fields' => array(
+								'title' => array(
+									'type' => 'string',
+									'index' => 'analyzed',
+									'similarity' => 'BM25',
+								),
+								'word_count' => array(
+									'type' => 'token_count',
+									'analyzer' => 'default',
+								),
+							),
+						),
+						// This is post_content in the DB
+						'description' => array(
+							'type' => 'multi_field',
+							'fields' => array(
+								'content' => array(
+									'type' => 'string',
+									'index' => 'analyzed',
+									'similarity' => 'BM25',
+								),
+								'word_count' => array(
+									'type' => 'token_count',
+									'analyzer' => 'default',
+								),
+							),
+						),
+						// This is post_excerpt in the DB
+						'caption' => array(
+							'type' => 'multi_field',
+							'fields' => array(
+								'excerpt' => array(
+									'type' => 'string',
+									'index' => 'analyzed',
+									'similarity' => 'BM25',
+								),
+								'word_count' => array(
+									'type' => 'token_count',
+									'analyzer' => 'default',
+								),
+							),
+						),
+						'dimensions_token' => array(
+							'type' => 'object',
+							'properties' => array(
+								'width' => array(
+									'type' => 'short',
+								),
+								'height' => array(
+									'type' => 'short',
+								),
+								'area' => array(
+									'type' => 'integer',
+								),
+							),
+						),
+						'is_grayscale' => array(
+							'type' => 'boolean',
+						),
+						'has_transparency' => array(
+							'type' => 'boolean',
+						),
+						'color_token' => array(
+							'type' => 'object',
+							'properties' => array(
+								'hue' => array(
+									'type' => 'short'
+								),
+								'saturation' => array(
+									'type' => 'short'
+								),
+								'value' => array(
+									'type' => 'short'
+								),
+								'dominance' => array(
+									'type' => 'byte'
+								),
+							),
 						),
 					),
 				),
@@ -978,7 +1072,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		//clean urls (we don't want the scheme so we can do prefix matching)
 		if ( isset( $data['image'] ) ) {
 			foreach ( $data['image'] as $idx => $obj) {
-				$data['image'][$idx]['url'] = $this->remove_url_scheme( $obj['url'] );
+				$data['image'][$idx]['url'] = $this->remove_url_scheme( $obj['src'] );
 			}
 		}
 
