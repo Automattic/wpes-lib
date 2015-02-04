@@ -2,6 +2,8 @@
 
 class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 
+	var $index_media = false;
+
 	public function get_mappings( $args = array() ) {
 		$defaults = array(
 			'all_field_enabled' => false,
@@ -597,6 +599,11 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			)
 		);
 
+		if ( $this->index_media ) {
+			//Indexing media attachments also
+			// Add additional fields here
+		}
+		
 		return $post_mapping;
 	}
 
@@ -704,9 +711,10 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			return false;
 		}
 
+		$post_status = get_post_status( $post_id );
 		$public_stati = get_post_stati( array( 'public' => true ) );
 
-		if ( ! in_array( $post->post_status, $public_stati ) ) {
+		if ( ! in_array( $post_status, $public_stati ) ) {
 			restore_current_blog();
 			return false;
 		}
@@ -715,9 +723,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			restore_current_blog();
 			return false;
 		}
-
-		$blog_details = get_blog_details( $blog_id );
-
+		
 		$post_ok = true;
 		$post_type_obj = get_post_type_object( $post->post_type );
 		if ( $post_type_obj->exclude_from_search ) {
@@ -732,6 +738,17 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $post_ok;
 	}
 
+	function is_parent_post_public( $blog_id, $post_id ) {
+		switch_to_blog( $blog_id );
+		$post = get_post( $post_id );
+		//if there is no parent (eg unattached media) we consider it public
+		if ( 0 == $post->post_parent )
+			return true;
+
+		restore_current_blog();
+		return $this->is_post_public( $blog_id, $post->post_parent );
+	}
+	
 	function is_post_indexable( $blog_id, $post_id ) {
 		if ( $post_id == false )
 			return false;
@@ -752,16 +769,24 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			$format = 'standard';
 		}
 
+		if ( 'attachment' == $post->post_type ) {
+			$url = wp_get_attachment_url( $post->ID );
+			if ( false == $url )
+				$url = get_permalink( $post->ID );
+		} else {
+			$url = get_permalink( $post->ID );
+		}
+		
 		$data = array(
 			'post_id'      => $this->clean_long( $post->ID, 'post_id' ),
 			'post_type'    => $post->post_type,
 			'post_format'  => $format,
-			'post_status'  => $post->post_status,
+			'post_status'  => get_post_status( $post->ID ),
 			'parent_post_id' => $post->post_parent,
 			'ancestor_post_ids' => get_post_ancestors( $post->ID ),
 			'public'       => (boolean) $this->is_post_public( $blog_id, $post->ID ),
 			'has_password' => ( strlen( $post->post_password ) > 0 ),
-			'url'          => $this->remove_url_scheme( get_permalink( $post->ID ) ),
+			'url'          => $this->remove_url_scheme( $url ),
 			'slug'         => $post->post_name,
 			'date'          => $this->clean_date( $post->post_date ),
 			'date_gmt'      => $this->clean_date( $post->post_date_gmt ),
@@ -906,7 +931,11 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 
 			$commenter_ids = array();
 			if ( ! empty( $comment_ids ) ) {
-				foreach ( $comment_ids as $comment_id ) {
+				foreach ( $comment_ids as $idx => $comment_id ) {
+					// Clear cache every 1000 calls for posts with thousands of commenters
+					if ( 0 === ( $idx % 1000 ) )
+						stop_the_insanity();
+
 					$commenter_id = get_comment_meta( $comment_id, '_jetpack_wpcom_user_id', true );
 					if ( $commenter_id )
 						$commenter_ids[$commenter_id] = true;
