@@ -3,14 +3,14 @@
 class WPES_Analyzer_Builder {
 
 	/* Analyzer Strategy
-	 * -Use very light or minimal stemming to avoid losing semantic information 
+	 * -Use very light or minimal stemming to avoid losing semantic information
 	 *  (eg informed and inform have very different meanings)
 	 *   See:
 	 *    http://www.searchworkings.org/blog/-/blogs/388936
 	 *    http://www.ercim.eu/publication/ws-proceedings/CLEF2/savoy.pdf
 	 * -Use stop words for those languages we have them for (and add Hebrew)
 	 * -Use ICU Tokenizer for most all cases except where there is a better lang specific tokenizer (eg Japanese)
-	 *   See details on tokenizers: 
+	 *   See details on tokenizers:
 	 *    ICU (good on most all Unicode): http://www.unicode.org/reports/tr29/
 	 *    kuromoji (Japanese word segmentation): http://www.atilika.org/
 	 *    smart-cn (Chinese sentence and word segmentation): http://lucene.apache.org/core/old_versioned_docs/versions/3_5_0/api/contrib-smartcn/org/apache/lucene/analysis/cn/smart/SmartChineseAnalyzer.html
@@ -19,222 +19,223 @@ class WPES_Analyzer_Builder {
 	 *   See:
 	 *    http://www.unicode.org/reports/tr30/tr30-4.html
 	 *    http://userguide.icu-project.org/transforms/normalization
-	 * -'default' analyzer 
+	 * -'default' analyzer
 	 *   -For Indexing Languages without custom analyzers/stemmers/stopwords
 	 *   -Search queries use the 'default' analyzer to _mostly_ work across all languages (stemmed words don't!)
 	 *
-	 * A more detailed explanation is available here: 
-	 *   http://gibrown.wordpress.com/2013/05/01/three-principles-for-multilingal-indexing-in-elasticsearch/ 
+	 * A more detailed explanation is available here:
+	 *   http://gibrown.wordpress.com/2013/05/01/three-principles-for-multilingal-indexing-in-elasticsearch/
 	 */
 
 	var $supported_languages = array(
 		//lang => analyzer_name, analyzer, tokenizer, stop words, stemming
 		'ar' => array(
-			'name'      => 'ar_analyzer', 
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_arabic_', 
-			'stemming'  => null 
+			'name'      => 'ar_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_arabic_',
+			'stemming'  => null
 		),
-		'bg' => array( 
-			'name'      => 'bg_analyzer', 
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_bulgarian_', 
+		'bg' => array(
+			'name'      => 'bg_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_bulgarian_',
 			'stemming'  => null
 		),
 		//Not detected by ES langdetect, but left in (detected as spanish)
-		'ca' => array( 
+		'ca' => array(
 			'name'      => 'ca_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_catalan_', 
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_catalan_',
 			'stemming'  => null
 		),
-		'cs' => array( 
+		'cs' => array(
 			'name'      => 'cs_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_czech_', 
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_czech_',
 			'stemming'  => null
 		),
-		'da' => array( 
+		'da' => array(
 			'name'      => 'da_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_danish_', 
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_danish_',
 			'stemming'  => null
 		),
 		'de' => array(  //removes plurals only
 			'name'      => 'de_analyzer',
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_german_', 
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_german_',
 			'stemming'  => 'minimal_german'
 		),
-		'el' => array( 
+		'el' => array(
 			'name'      => 'el_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_greek_', 
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_greek_',
 			'stemming'  => null
 		),
 		'en' => array(  //removes plurals only
-			'name'      => 'en_analyzer', 
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_english_', 
-			'stemming'  => 'minimal_english' 
+			'name'      => 'en_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_english_',
+			'stemming'  => 'minimal_english'
 		),
 		'es' => array( //removes plurals and masc/fem
-			'name'      => 'es_analyzer', 
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_spanish_', 
-			'stemming'  => 'light_spanish' 
-		), 
+			'name'      => 'es_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_spanish_',
+			'stemming'  => 'light_spanish'
+		),
 		//Not detected by ES langdetect, but left in
-		'eu' => array( 
+		'eu' => array(
 			'name'      => 'eu_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_basque_', 
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_basque_',
 			'stemming'  => null
 		),
-		'fa' => array( 
+		'fa' => array(
 			'name'      => 'fa_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_persian_', 
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_persian_',
 			'stemming'  => null
 		),
 		'fi' => array( //removes plurals and masc/fem
-			'name'      => 'fi_analyzer', 
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_finnish_', 
+			'name'      => 'fi_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_finnish_',
 			'stemming'  => 'light_finish'  //sic in ES
 		),
 		'fr' => array( //removes plurals only
-			'name'      => 'fr_analyzer', 
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_french_', 
-			'stemming'  => 'minimal_french' 
+			'name'      => 'fr_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_french_',
+			'stemming'  => 'minimal_french'
 		),
 		'he' => array( //stopwords added by get_hebrew_stopwords()
-			'name'      => 'he_analyzer', 
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => null, 
+			'name'      => 'he_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => null,
 			'stemming'  => null,
 		),
-		'hi' => array( 
+		'hi' => array(
 			'name'      => 'hi_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_hindi_', 
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_hindi_',
 			'stemming'  => null
 		),
-		'hu' => array( //removes plurals and masc/fem? 
-			'name'      => 'hu_analyzer', 
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_hungarian_', 
-			'stemming'  => 'light_hungarian' 
+		'hu' => array( //removes plurals and masc/fem?
+			'name'      => 'hu_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_hungarian_',
+			'stemming'  => 'light_hungarian'
 		),
 		//Not detected by ES langdetect
-		'hy' => array( 
+		'hy' => array(
 			'name'      => 'hy_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_armenian_', 
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_armenian_',
 			'stemming'  => null
 		),
-		'id' => array( 
+		'id' => array(
 			'name'      => 'id_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_indonesian_', 
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_indonesian_',
 			'stemming'  => null
 		),
-		'it' => array( //removes plurals and masc/fem 
-			'name'      => 'it_analyzer', 
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_italian_', 
-			'stemming'  => 'light_italian' 
+		'it' => array( //removes plurals and masc/fem
+			'name'      => 'it_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_italian_',
+			'stemming'  => 'light_italian'
 		),
-		'ja' => array( 
+		'ja' => array(
 			'name'      => 'ja_analyzer',
 			'analyzer'  => 'custom',
 			'tokenizer' => "kuromoji_tokenizer",
-			'stopwords' => null, 
+			'stopwords' => null,
 			'stemming'  => null
 		),
-		'ko' => array( 
+		'ko' => array(
 			'name'      => 'ko_analyzer',
 			'analyzer'  => 'cjk',
 			'tokenizer' => null,
-			'stopwords' => null, 
+			'stopwords' => null,
 			'stemming'  => null
 		),
-		'nl' => array( 
+		'nl' => array(
 			'name'      => 'nl_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_dutch_', 
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_dutch_',
 			'stemming'  => null
 		),
-		'no' => array( 
+		'no' => array(
 			'name'      => 'no_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_norwegian_', 
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_norwegian_',
 			'stemming'  => null
 		),
 		'pt' => array(  //removes plurals only
-			'name'      => 'pt_analyzer', 
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_portuguese_', 
-			'stemming'  => 'minimal_portuguese' 
+			'name'      => 'pt_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_portuguese_',
+			'stemming'  => 'minimal_portuguese'
 		),
-		'ro' => array( 
+		'ro' => array(
 			'name'      => 'ro_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_romanian_', 
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_romanian_',
 			'stemming'  => null
 		),
 		'ru' => array(  //removes plurals and masc/fem
-			'name'      => 'ru_analyzer', 
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_russian_', 
-			'stemming'  => 'light_russian' 
+			'name'      => 'ru_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_russian_',
+			'stemming'  => 'light_russian'
 		),
 		'sv' => array(  //removes plurals and masc/fem?
-			'name'      => 'sv_analyzer', 
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_swedish_', 
-			'stemming'  => 'light_swedish' 
+			'name'      => 'sv_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_swedish_',
+			'stemming'  => 'light_swedish'
 		),
-		'tr' => array( 
+		'tr' => array(
 			'name'      => 'tr_analyzer',
 			'analyzer'  => 'custom',
-			'tokenizer' => 'icu_tokenizer', 
-			'stopwords' => '_turkish_', 
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => '_turkish_',
 			'stemming'  => null
 		),
 		'zh' => array(  //uses a hidden markov model and dictionary to segment into words
 			'name'      => 'zh_analyzer',
 			'analyzer'  => 'custom',
 			'tokenizer' => 'smartcn_tokenizer',
-			'stopwords' => null, 
-			'stemming'  => null 
+			'stopwords' => null,
+			'stemming'  => null
 		),
+		// Non Language based
 		'lowercase' => array(
 			'name'      => 'lowercase_analyzer',
 			'analyzer'  => 'custom',
@@ -242,10 +243,31 @@ class WPES_Analyzer_Builder {
 			'stopwords' => null,
 			'stemming'  => null,
 		),
+		'ngram' => array(
+			'name'      => 'ngram_analyzer',
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
+			'stopwords' => null,
+			'stemming'  => null,
+		),
+		'edgengram' => array(
+				'name'      => 'edgengram_analyzer',
+				'analyzer'  => 'custom',
+				'tokenizer' => 'icu_tokenizer',
+				'stopwords' => null,
+				'stemming'  => null,
+		),
+		'edgengram_raw' => array(
+				'name'      => 'edgengram_raw_analyzer',
+				'analyzer'  => 'custom',
+				'tokenizer' => 'keyword',
+				'stopwords' => null,
+				'stemming'  => null,
+		),
 		'default' => array( //general analyzer used as the default for search (works pretty well across langs)
 			'name'      => 'default',
-			'analyzer'  => 'custom', 
-			'tokenizer' => 'icu_tokenizer', 
+			'analyzer'  => 'custom',
+			'tokenizer' => 'icu_tokenizer',
 			'stopwords' => null,
 			'stemming'  => null
 		),
@@ -294,7 +316,7 @@ class WPES_Analyzer_Builder {
 
 		$settings = array( 'filter' => array(), 'analyzer' => array() );
 
-		//$settings['filter']['bigram_filter'] = array( 
+		//$settings['filter']['bigram_filter'] = array(
 		//	'type' => 'shingle',
 		//	'min_shingle_size' => 2,
 		//	'max_shingle_size' => 2,
@@ -309,6 +331,32 @@ class WPES_Analyzer_Builder {
 					'mode' => 'search'
 			) );
 		}
+
+		//ngram needs custom filters
+		if ( in_array( 'ngram', $langs ) ) {
+			$settings['filter']['unique_filter'] = array(
+				'type' => 'unique',
+				'only_on_same_position' => true
+			);
+			$settings['filter']['ngram_filter'] = array(
+				'type' => 'nGram',
+				'min_gram' => '3',
+				'max_gram' => '5',
+			);
+		}
+
+		if ( in_array( 'edgengram', $langs ) ) {
+			$settings['filter']['unique_filter'] = array(
+					'type' => 'unique',
+					'only_on_same_position' => true
+			);
+			$settings['filter']['edgengram_filter'] = array(
+					'type' => 'edgeNGram',
+					'min_gram' => '2',
+					'max_gram' => '10',
+			);
+		}
+
 
 		foreach ( $langs as $lang ) {
 			$config = $this->supported_languages[$lang];
@@ -358,6 +406,27 @@ class WPES_Analyzer_Builder {
 				continue;
 			}
 
+			if ( preg_match( "/ngram/", $lang ) ) {
+				// Based partly off of https://qbox.io/blog/an-introduction-to-ngrams-in-elasticsearch
+				// but we need Asian langs, so we want to tokenize with icu tokenizer
+				// and then duplicate those tokens before creating ngrams so we can match on single chars
+				// which may be words
+				// We use ngrams rather than edge-ngrams when we want to look within urls, usernames, etc
+				// eg photomatt (match Matt), www.nytimes.com (match nytimes), etc
+				$settings['analyzer'][ $config['name'] ]['tokenizer'] = $config['tokenizer'];
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'icu_normalizer';
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'icu_folding';
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'keyword_repeat';
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'unique_filter'; //remove dupes at the same location
+				if ( 'ngram' === $lang ) {
+					$settings['analyzer'][ $config['name'] ]['filter'][] = 'ngram_filter';
+				} elseif ( ( 'edgengram' === $lang ) || ( 'edgengram_raw' === $lang ) ) {
+					$settings['analyzer'][ $config['name'] ]['filter'][] = 'edgengram_filter';
+				}
+				continue;
+			}
+
+
 			/////////////////////////////////////////////////
 			//First filter is normalization
 			// normalization needs to be before stopwords so we combine UTF-8 characters (eg ê)
@@ -396,7 +465,7 @@ class WPES_Analyzer_Builder {
 				$settings['analyzer'][ $config['name'] ]['filter'][] = $lang . '_stop_filter';
 			}
 
-			
+
 			////////////////
 			// Stemming
 			if ( $config['stemming'] ) {
@@ -420,7 +489,7 @@ class WPES_Analyzer_Builder {
 
 		return $settings;
 	}
-	
+
 	//hebrew stopwords taken from http://wiki.korotkin.co.il/Hebrew_stopwords
 	//  removed the two word "stopwords" per @ranh
 	function get_hebrew_stopwords() {
@@ -642,4 +711,3 @@ class WPES_Analyzer_Builder {
 		return $stopwords;
 	}
 }
-

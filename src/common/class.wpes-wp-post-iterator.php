@@ -44,7 +44,14 @@ class WPES_WP_Post_Iterator extends WPES_Abstract_Iterator {
 		$this->last_id = end( $posts )->ID;
 		$this->first_id = reset( $posts )->ID;
 
+		if ( $this->max_id && ( $this->last_id > $this->max_id ) )
+			$this->last_id = $this_max_id;
+
 		foreach( $posts as $post ) {
+			if ( $this->max_id && ( $post->ID > $this->max_id ) ) {
+				$this->done = true;
+				return $this->curr_ids;
+			}
 			$is_indexable = $this->doc_builder->is_indexable( array(
 				'blog_id' => $this->blog_id,
 				'id' => $post->ID,

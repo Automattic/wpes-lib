@@ -11,104 +11,61 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		);
 		$args = wp_parse_args( $args, $defaults );
 
+		$mappings = new WPES_WP_Mappings();
+
 		$dynamic_post_templates = array(
 			array(
 				"tax_template_name" => array(
 					"path_match" => "taxonomy.*.name",
-					"mapping" => array(
-						'type' => 'multi_field',
-						'fields' => array(
-							'name' => array(
-								'type' => 'string',
-								'index' => 'analyzed',
-							),
-							'raw' => array(
-								'type' => 'string',
-								'index' => 'not_analyzed',
-							),
-							'raw_lc' => array(
-								'type' => 'string',
-								'index' => 'analyzed',
-								'analyzer' => 'lowercase_analyzer',
-							),
-			) ) ) ),
+					"mapping" => $mappings->text_lcase_raw( 'name' ),
+			) ),
 			array(
 				"tax_template_slug" => array(
 					"path_match" => "taxonomy.*.slug",
-					"mapping" => array(
-						'type' => 'string',
-						'index' => 'not_analyzed',
-			) ) ),
+					"mapping" => $mappings->keyword(),
+			) ),
 			array(
 				"tax_template_term_id" => array(
 					"path_match" => "taxonomy.*.term_id",
-					"mapping" => array(
-						'type' => 'long',
-			) ) ),
+					"mapping" => $mappings->primitive( 'long' ),
+			) ),
 			array(
 				"has_template" => array(
 					"path_match" => "has.*",
-					"mapping" => array(
-						'type' => 'short',
-			) ) ),
+					"mapping" => $mappings->primitive( 'short' ),
+			) ),
 			array(
 				"shortcode_args_template" => array(
 					"path_match" => "shortcode.*.id",
-					"mapping" => array(
-						'type' => 'string',
-						'index' => 'not_analyzed',
-			) ) ),
+					"mapping" => $mappings->keyword(),
+			) ),
 			array(
 				"shortcode_count_template" => array(
 					"path_match" => "shortcode.*.count",
-					"mapping" => array(
-						'type' => 'short',
-			) ) ),
+					"mapping" => $mappings->primitive( 'short' ),
+			) ),
 		);
 
 		if ( $args['index_meta'] ) {
 			$dynamic_post_templates[] = array(
 				"meta_str_template" => array(
 					"path_match" => "meta.*.value",
-					"mapping" => array(
-						'type' => 'multi_field',
-						'fields' => array(
-							'value' => array(
-								'type' => 'string',
-								'index' => 'analyzed',
-							),
-							'raw' => array(
-								'type' => 'string',
-								'index' => 'not_analyzed',
-							),
-							'raw_lc' => array(
-								'type' => 'string',
-								'index' => 'analyzed',
-								'analyzer' => 'lowercase_analyzer'
-							),
-						),
-					),
+					"mapping" => $mappings->text_lcase_raw( 'value' ),
 			) );
 			$dynamic_post_templates[] = array(
 				"meta_long_template" => array(
 					"path_match" => "meta.*.long",
-					"mapping" => array(
-						'type' => 'long'
-					),
+					"mapping" => $mappings->primitive( 'long' ),
 			) );
 			$dynamic_post_templates[] = array(
 				"meta_bool_template" => array(
 					"path_match" => "meta.*.boolean",
-					"mapping" => array(
-						'type' => 'boolean'
-					),
+					"mapping" => $mappings->primitive( 'boolean' ),
 			) );
 			$dynamic_post_templates[] = array(
 				"meta_float_template" => array(
 					"path_match" => "meta.*.double",
-					"mapping" => array(
-						'type' => 'double'
-					),
+					"mapping" => $mappings->primitive( 'double' ),
 			) );
 		}
 
@@ -122,385 +79,49 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 				//////////////////////////////////
 				//Blog/Post meta fields
 
-				'post_id' => array(
-					'type' => 'long',
-					'store' => 'yes'
-				),
-				'blog_id' => array(
-					'type' => 'integer',
-					'store' => 'yes'
-				),
-				'site_id' => array(
-					'type' => 'short',
-				),
-				'post_type' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed'
-				),
-				'post_format' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed'
-				),
-				'post_status' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed'
-				),
-				'public' => array(
-					'type' => 'boolean',
-				),
-				'has_password' => array(
-					'type' => 'boolean',
-				),
+				'post_id'               => $mappings->primitive_stored( 'long' ),
+				'blog_id'               => $mappings->primitive_stored( 'integer' ),
+				'site_id'               => $mappings->primitive( 'short' ),
+				'post_type'             => $mappings->keyword(),
+				'post_format'           => $mappings->keyword(),
+				'post_status'           => $mappings->keyword(),
+				'public'                => $mappings->primitive( 'boolean' ),
+				'has_password'          => $mappings->primitive( 'boolean' ),
 
-				'parent_post_id' => array(
-					'type' => 'long',
-				),
-				'ancestor_post_ids' => array(
-					'type' => 'long',
-				),
+				'parent_post_id'        => $mappings->primitive( 'long' ),
+				'ancestor_post_ids'     => $mappings->primitive( 'long' ),
 
-				'menu_order' => array(
-					'type' => 'integer',
-				),
+				'menu_order'            => $mappings->primitive( 'integer' ),
 
-				'lang' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed',
-				),
-				'lang_analyzer' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed',
-				),
+				'lang'                  => $mappings->keyword(),
+				'lang_analyzer'         => $mappings->keyword(),
 
-				'url' => array(
-					'type' => 'multi_field',
-					'fields' => array(
-						'url' => array(
-							'type' => 'string',
-							'index' => 'analyzed',
-							'similarity' => 'BM25',
-						),
-						'raw' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
-					),
-				),
-				'slug' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed',
-				),
+				'url'                   => $mappings->text_raw( 'url' ),
+				'slug'                  => $mappings->keyword(),
 
-				'date' => array(
-					'type' => 'date',
-					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
-				),
-				'date_token' => array(
-					'type' => 'object',
-					'properties' => array(
-						'year' => array(
-							'type' => 'short'
-						),
-						'month' => array(
-							'type' => 'byte'
-						),
-						'day' => array(
-							'type' => 'byte'
-						),
-						'day_of_week' => array(
-							'type' => 'byte'
-						),
-						'week_of_year' => array(
-							'type' => 'byte'
-						),
-						'day_of_year' => array(
-							'type' => 'short'
-						),
-						'hour' => array(
-							'type' => 'byte'
-						),
-						'minute' => array(
-							'type' => 'byte'
-						),
-						'second' => array(
-							'type' => 'byte'
-						),
-						'seconds_from_day' => array(
-							'type' => 'integer'
-						),
-						'seconds_from_hour' => array(
-							'type' => 'short'
-						),
-					)
-				),
-				'date_gmt' => array(
-					'type' => 'date',
-					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
-				),
-				'date_gmt_token' => array(
-					'type' => 'object',
-					'properties' => array(
-						'year' => array(
-							'type' => 'short'
-						),
-						'month' => array(
-							'type' => 'byte'
-						),
-						'day' => array(
-							'type' => 'byte'
-						),
-						'day_of_week' => array(
-							'type' => 'byte'
-						),
-						'week_of_year' => array(
-							'type' => 'byte'
-						),
-						'day_of_year' => array(
-							'type' => 'short'
-						),
-						'hour' => array(
-							'type' => 'byte'
-						),
-						'minute' => array(
-							'type' => 'byte'
-						),
-						'second' => array(
-							'type' => 'byte'
-						),
-						'seconds_from_day' => array(
-							'type' => 'integer'
-						),
-						'seconds_from_hour' => array(
-							'type' => 'short'
-						),
-					)
-				),
-				'modified' => array(
-					'type' => 'date',
-					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
-				),
-				'modified_token' => array(
-					'type' => 'object',
-					'properties' => array(
-						'year' => array(
-							'type' => 'short'
-						),
-						'month' => array(
-							'type' => 'byte'
-						),
-						'day' => array(
-							'type' => 'byte'
-						),
-						'day_of_week' => array(
-							'type' => 'byte'
-						),
-						'week_of_year' => array(
-							'type' => 'byte'
-						),
-						'day_of_year' => array(
-							'type' => 'short'
-						),
-						'hour' => array(
-							'type' => 'byte'
-						),
-						'minute' => array(
-							'type' => 'byte'
-						),
-						'second' => array(
-							'type' => 'byte'
-						),
-						'seconds_from_day' => array(
-							'type' => 'integer'
-						),
-						'seconds_from_hour' => array(
-							'type' => 'short'
-						),
-					)
-				),
-				'modified_gmt' => array(
-					'type' => 'date',
-					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
-				),
-				'modified_gmt_token' => array(
-					'type' => 'object',
-					'properties' => array(
-						'year' => array(
-							'type' => 'short'
-						),
-						'month' => array(
-							'type' => 'byte'
-						),
-						'day' => array(
-							'type' => 'byte'
-						),
-						'day_of_week' => array(
-							'type' => 'byte'
-						),
-						'week_of_year' => array(
-							'type' => 'byte'
-						),
-						'day_of_year' => array(
-							'type' => 'short'
-						),
-						'hour' => array(
-							'type' => 'byte'
-						),
-						'minute' => array(
-							'type' => 'byte'
-						),
-						'second' => array(
-							'type' => 'byte'
-						),
-						'seconds_from_day' => array(
-							'type' => 'integer'
-						),
-						'seconds_from_hour' => array(
-							'type' => 'short'
-						),
-					)
-				),
+				'date'                  => $mappings->datetime(),
+				'date_token'            => $mappings->datetimetoken(),
+				'date_gmt'              => $mappings->datetime_stored(),
+				'date_gmt_token'        => $mappings->datetimetoken(),
+				'modified'              => $mappings->datetime(),
+				'modified_token'        => $mappings->datetimetoken(),
+				'modified_gmt'          => $mappings->datetime(),
+				'modified_gmt_token'    => $mappings->datetimetoken(),
 
-				'sticky' => array(
-					'type' => 'boolean',
-				),
+				'sticky'                => $mappings->primitive( 'boolean' ),
 
 				//////////////////////////////////
 				//Post Content fields
 
-				'author' => array(
-					'type' => 'multi_field',
-					'fields' => array(
-						'author' => array(
-							'type' => 'string',
-							'index' => 'analyzed',
-							'similarity' => 'BM25',
-						),
-						'raw' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
-					),
-				),
-				'author_login' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed'
-				),
-				'author_id' => array(
-					'type' => 'integer'
-				),
-				'title'	=> array(
-					'type' => 'multi_field',
-					'fields' => array(
-						'title' => array(
-							'type' => 'string',
-							'index' => 'analyzed',
-							'similarity' => 'BM25',
-						),
-						'word_count' => array(
-							'type' => 'token_count',
-							'analyzer' => 'default',
-						),
-					),
-				),
-				'content'  => array(
-					'type' => 'multi_field',
-					'fields' => array(
-						'content' => array(
-							'type' => 'string',
-							'index' => 'analyzed',
-							'similarity' => 'BM25',
-						),
-						'word_count' => array(
-							'type' => 'token_count',
-							'analyzer' => 'default',
-						),
-					),
-				),
-				'excerpt'  => array(
-					'type' => 'multi_field',
-					'fields' => array(
-						'excerpt' => array(
-							'type' => 'string',
-							'index' => 'analyzed',
-							'similarity' => 'BM25',
-						),
-						'word_count' => array(
-							'type' => 'token_count',
-							'analyzer' => 'default',
-						),
-					),
-				),
-				'tag_cat_count'   => array(
-					'type' => 'short',
-				),
-				'tag' => array(
-					'type' => 'object',
-					'properties' => array(
-						'name' => array(
-							'type' => 'multi_field',
-							'fields' => array(
-								'name' => array(
-									'type' => 'string',
-									'index' => 'analyzed',
-									'index_name' => 'tag',
-									'similarity' => 'BM25',
-								),
-								'raw' => array(
-									'type' => 'string',
-									'index' => 'not_analyzed',
-									'index_name' => 'tag.raw',
-								),
-								'raw_lc' => array(
-									'type' => 'string',
-									'index' => 'analyzed',
-									'analyzer' => 'lowercase_analyzer',
-									'index_name' => 'tag.raw_lc',
-								),
-							),
-						),
-						'slug' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
-						'term_id' => array(
-							'type' => 'long',
-						),
-					),
-				),
-				'category' => array(
-					'type' => 'object',
-					'properties' => array(
-						'name' => array(
-							'type' => 'multi_field',
-							'fields' => array(
-								'name' => array(
-									'type' => 'string',
-									'index' => 'analyzed',
-									'index_name' => 'category',
-									'similarity' => 'BM25',
-								),
-								'raw' => array(
-									'type' => 'string',
-									'index' => 'not_analyzed',
-									'index_name' => 'category.raw',
-								),
-								'raw_lc' => array(
-									'type' => 'string',
-									'index' => 'analyzed',
-									'analyzer' => 'lowercase_analyzer',
-									'index_name' => 'category.raw_lc',
-								),
-							),
-						),
-						'slug' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
-						'term_id' => array(
-							'type' => 'long',
-						),
-					),
-				),
+				'author'                => $mappings->text_raw( 'author' ),
+				'author_login'          => $mappings->keyword(),
+				'author_id'             => $mappings->primitive( 'integer' ),
+				'title'                 => $mappings->text_count( 'title' ),
+				'content'               => $mappings->text_count( 'content' ),
+				'excerpt'               => $mappings->text_count( 'excerpt' ),
+				'tag_cat_count'         => $mappings->primitive( 'short' ),
+				'tag'                   => $mappings->tagcat( 'tag' ),
+				'category'              => $mappings->tagcat( 'category' ),
 
 				//taxonomy.*.* added as dynamic template
 
@@ -512,153 +133,28 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 				'link' => array(
 					'type' => 'object',
 					'properties' => array(
-						'url' => array(
-							'type' => 'multi_field',
-							'fields' => array(
-								'url' => array(
-									'type' => 'string',
-									'index' => 'analyzed', //default analyzer
-									'similarity' => 'BM25',
-								),
-								'raw' => array(
-									'type' => 'string',
-									'index' => 'not_analyzed',
-								),
-							),
-						),
-						'host' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
-						'host_reversed' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
+						'url'           => $mappings->text_raw( 'url' ),
+						'host'          => $mappings->keyword(),
+						'host_reversed' => $mappings->keyword(),
 					),
 				),
 				'image' => array(
-					'type' => 'nested',
+					'type' => 'object',
 					'properties' => array(
-						'url' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
-						'mime_type' => array(
-							'type' => 'multi_field',
-							'fields' => array(
-								'name' => array(
-									'type' => 'string',
-									'index' => 'lowercase_analyzer',
-								),
-								'raw' => array(
-									'type' => 'string',
-									'index' => 'not_analyzed',
-								),
-							),
-						),
-						'title'	=> array(
-							'type' => 'multi_field',
-							'fields' => array(
-								'title' => array(
-									'type' => 'string',
-									'index' => 'analyzed',
-									'similarity' => 'BM25',
-								),
-								'word_count' => array(
-									'type' => 'token_count',
-									'analyzer' => 'default',
-								),
-							),
-						),
-						// This is post_content in the DB
-						'description' => array(
-							'type' => 'multi_field',
-							'fields' => array(
-								'content' => array(
-									'type' => 'string',
-									'index' => 'analyzed',
-									'similarity' => 'BM25',
-								),
-								'word_count' => array(
-									'type' => 'token_count',
-									'analyzer' => 'default',
-								),
-							),
-						),
-						// This is post_excerpt in the DB
-						'caption' => array(
-							'type' => 'multi_field',
-							'fields' => array(
-								'excerpt' => array(
-									'type' => 'string',
-									'index' => 'analyzed',
-									'similarity' => 'BM25',
-								),
-								'word_count' => array(
-									'type' => 'token_count',
-									'analyzer' => 'default',
-								),
-							),
-						),
-						'dimensions_token' => array(
-							'type' => 'object',
-							'properties' => array(
-								'width' => array(
-									'type' => 'short',
-								),
-								'height' => array(
-									'type' => 'short',
-								),
-								'area' => array(
-									'type' => 'integer',
-								),
-							),
-						),
-						'is_grayscale' => array(
-							'type' => 'boolean',
-						),
-						'has_transparency' => array(
-							'type' => 'boolean',
-						),
-						'color_token' => array(
-							'type' => 'object',
-							'properties' => array(
-								'hue' => array(
-									'type' => 'short'
-								),
-								'saturation' => array(
-									'type' => 'short'
-								),
-								'value' => array(
-									'type' => 'short'
-								),
-								'dominance' => array(
-									'type' => 'byte'
-								),
-							),
-						),
+						'url'           => $mappings->keyword(),
 					),
 				),
-				'shortcode_types' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed',
-				),
+				'shortcode_types'       => $mappings->keyword(),
 				'embed' => array(
 					'type' => 'object',
 					'properties' => array(
-						'url' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
+						'url'           => $mappings->keyword(),
 					),
 				),
 				'hashtag' => array(
 					'type' => 'object',
 					'properties' => array(
-						'name' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
+						'name'          => $mappings->keyword(),
 					),
 				),
 				'mention' => array(
@@ -667,15 +163,8 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						'name' => array(
 							'type' => 'multi_field',
 							'fields' => array(
-								'name' => array(
-									'type' => 'string',
-									'index' => 'not_analyzed',
-								),
-								'lc' => array(
-									'type' => 'string',
-									'index' => 'analyzed',
-									'analyzer' => 'lowercase_analyzer',
-								),
+								'name'  => $mappings->keyword(),
+								'lc'    => $mappings->keyword_lcase(),
 							),
 						),
 					),
@@ -684,12 +173,9 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 				//////////////////////////////////
 				//Comments
 
-				'commenter_ids' => array(
-					'type' => 'integer',
-				),
-				'comment_count' => array(
-					'type' => 'integer',
-				)
+				'commenter_ids'         => $mappings->primitive( 'integer' ),
+				'comment_count'         => $mappings->primitive( 'integer' ),
+
 			)
 		);
 
@@ -697,7 +183,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			//Indexing media attachments also
 			// Add additional fields here
 		}
-		
+
 		return $post_mapping;
 	}
 
@@ -721,7 +207,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			'blog_id'      => $this->clean_int( $args['blog_id'], 'blog_id' ),
 			'site_id'      => $this->clean_short( $blog->site_id, 'site_id' ),
 		);
-		$lang_data = $this->blog_lang( $blog_id );
+		$lang_data = $this->post_lang( $blog_id );
 		$post_data = $this->post_fields( $post, $lang_data['lang'] );
 		$tax_data = $this->taxonomy( $post );
 		$commenters_data = $this->commenters( $args['blog_id'], $post );
@@ -762,7 +248,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					if ( !$post )
 						return array();
 					if ( $user_id ) {
-						$update_script['script'] = 'if ( !ctx._source.commenter_ids.contains(commenter) ) { ctx._source.commenter_ids += commenter; } ctx._source.comment_count = count;';
+						$update_script['script'] = 'if ( !ctx._source.commenter_ids.contains(commenter) ) { ctx._source.commenter_ids += commenter; }; ctx._source.comment_count = count;';
 						$update_script['params'] = array( "commenter" => $update_args, 'count' => $post->comment_count );
 					} else {
 						$update_script['script'] = 'ctx._source.comment_count = count;';
@@ -784,7 +270,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					}
 
 					if ( $remove ) {
-						$update_script['script'] = 'if ( ctx._source.commenter_ids.contains(commenter) ) { idx = ctx._source.commenter_ids.indexOf(commenter); ctx._source.commenter_ids.remove(idx); } ctx._source.comment_count = count;';
+						$update_script['script'] = 'if ( ctx._source.commenter_ids.contains(commenter) ) { idx = ctx._source.commenter_ids.indexOf(commenter); ctx._source.commenter_ids.remove(idx); }; ctx._source.comment_count = count;';
 						$update_script['params'] = array( "commenter" => $update_args, 'count' => $post->comment_count );
 					} else {
 						$update_script['script'] = 'ctx._source.comment_count = count;';
@@ -817,7 +303,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			restore_current_blog();
 			return false;
 		}
-		
+
 		$post_ok = true;
 		$post_type_obj = get_post_type_object( $post->post_type );
 		if ( $post_type_obj->exclude_from_search ) {
@@ -842,10 +328,17 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		restore_current_blog();
 		return $this->is_post_public( $blog_id, $post->post_parent );
 	}
-	
+
 	function is_post_indexable( $blog_id, $post_id ) {
 		if ( $post_id == false )
 			return false;
+
+		if ( !$this->index_media ) {
+			//filter out attachments
+			$post = get_blog_post( $blog_id, $post_id );
+			if ( 'attachment' == $post->post_type )
+				return false;
+		}
 
 		return $this->is_post_public( $blog_id, $post_id );
 	}
@@ -870,7 +363,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		} else {
 			$url = get_permalink( $post->ID );
 		}
-		
+
 		$data = array(
 			'post_id'      => $this->clean_long( $post->ID, 'post_id' ),
 			'post_type'    => $post->post_type,
@@ -903,7 +396,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $data;
 	}
 
-	public function blog_lang( $blog_id ) {
+	public function post_lang( $blog_id, $post = null ) {
 		$fld_bldr = new WPES_WP_Blog_Field_Builder();
 		return $fld_bldr->blog_lang( $blog_id );
 	}
@@ -960,10 +453,21 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 	}
 
 	public function meta( $post, $blacklist = array(), $whitelist = array() ) {
+		global $wpdb;
+		global $blog_id;
 		$data = array();
 		$meta = get_post_meta( $post->ID );
 		if ( !empty( $meta ) ) {
 			$data['meta'] = array();
+
+			$metakey_cnt = wp_cache_get( 'es_metakey_count' );
+			if ( false == $metakey_cnt ) {
+				$metakey_cnt = $wpdb->get_var( "SELECT COUNT(DISTINCT(meta_key)) FROM $wpdb->postmeta WHERE meta_key NOT LIKE '\_%'" );
+				wp_cache_set( 'es_metakey_count', $metakey_cnt );
+			}
+			if ( $metakey_cnt > 10000 )
+				return $data;
+
 			foreach ( $meta as $key => $v ) {
 				if ( in_array( $key, $blacklist ) )
 					continue;
@@ -1013,28 +517,35 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		$data = array();
 
 		$blog_details = get_blog_details( $blog_id );
+
+		//post->comment_count is not always correct for JP
+		$comment_count = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(comment_ID) FROM $wpdb->comments WHERE comment_post_ID = %d AND comment_approved = 1", $post->ID ) );
 		if ( 1 == $blog_details->site_id ) { //wp.com
 			$query = $wpdb->prepare( "SELECT DISTINCT user_id FROM $wpdb->comments WHERE comment_post_ID = %d AND comment_approved = 1 AND user_id != 0", $post->ID );
 			$commenter_ids = $wpdb->get_col( $query );
 		} else {
-			//jetpack comments from highlander have wpcom id stored in comment meta
-			// if they aren't using highlander then the user ids don't mean anything since they are specific to the blog
-			// unfortunately no cleaner way to do this query
-			$query = $wpdb->prepare( "SELECT comment_ID FROM $wpdb->comments WHERE comment_post_ID = %d AND comment_approved = 1", $post->ID );
-			$comment_ids = $wpdb->get_col( $query );
-
 			$commenter_ids = array();
-			if ( ! empty( $comment_ids ) ) {
-				foreach ( $comment_ids as $idx => $comment_id ) {
-					// Clear cache every 1000 calls for posts with thousands of commenters
-					if ( 0 === ( $idx % 1000 ) )
-						stop_the_insanity();
 
-					$commenter_id = get_comment_meta( $comment_id, '_jetpack_wpcom_user_id', true );
-					if ( $commenter_id )
-						$commenter_ids[$commenter_id] = true;
+			//If there are tons of comments, they are probably all anon anyways, so don't try and load them all
+			//will run out of memory otherwise
+			if ( $comment_count < 5000 ) {
+				//jetpack comments from highlander have wpcom id stored in comment meta
+				// if they aren't using highlander then the user ids don't mean anything since they are specific to the blog
+				// unfortunately no cleaner way to do this query
+				$query = $wpdb->prepare( "SELECT comment_ID FROM $wpdb->comments WHERE comment_post_ID = %d AND comment_approved = 1", $post->ID );
+				$comment_ids = $wpdb->get_col( $query );
+				if ( ! empty( $comment_ids ) ) {
+					foreach ( $comment_ids as $idx => $comment_id ) {
+						// Clear cache every 1000 calls for posts with thousands of commenters
+						if ( 0 === ( $idx % 1000 ) )
+							stop_the_insanity();
+	
+						$commenter_id = get_comment_meta( $comment_id, '_jetpack_wpcom_user_id', true );
+						if ( $commenter_id )
+							$commenter_ids[$commenter_id] = true;
+					}
+					$commenter_ids = array_keys( $commenter_ids );
 				}
-				$commenter_ids = array_keys( $commenter_ids );
 			}
 		}
 
@@ -1043,12 +554,17 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			if ( $commenter_id ) //get rid of user id 0
 				$data['commenter_ids'][] = $this->clean_int( $commenter_id, 'commenter_ids' );
 		}
-		$data['comment_count'] = $this->clean_int( $post->comment_count, 'comment_count' );
+		if ( $comment_count > 0 )
+			$data['comment_count'] = $this->clean_int( $comment_count, 'comment_count' );
+		else
+			$data['comment_count'] = 0; //sometimes comment_count is negative!
 
 		return $data;
 	}
 
 	public function extract_media( $blog_id, $post ) {
+		$GLOBALS['post'] = $post; //We need to set the global $post var to be a valid post so that inside gallery_shortcode it will be found for galleries that do not pass in an include. If not it will do a get_children() call without a post parent ID, returning ALL of the attachments and loading them in memory. See https://elasticsearchp2.wordpress.com/2016/01/15/vip-es-indexing-is-failing/ and https://a8c.slack.com/archives/vip/p1452891275024235
+		require_lib('class.wpcom-media-meta-extractor');
 		$data = Jetpack_Media_Meta_Extractor::extract( $blog_id, $post->ID, Jetpack_Media_Meta_Extractor::ALL );
 
 		//only allow those top level fields that we expect to prevent accidentally creating new mappings
@@ -1072,7 +588,15 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		//clean urls (we don't want the scheme so we can do prefix matching)
 		if ( isset( $data['image'] ) ) {
 			foreach ( $data['image'] as $idx => $obj) {
-				$data['image'][$idx]['url'] = $this->remove_url_scheme( $obj['src'] );
+				$data['image'][$idx]['url'] = $this->remove_url_scheme( $this->clean_string( $obj['url'] ) );
+			}
+		}
+		//clean links to make sure they don't break json_encode with non-utf8 chars
+		if ( isset( $data['link'] ) ) {
+			foreach ( $data['link'] as $idx => $obj) {
+				$data['link'][$idx]['url'] = $this->clean_string( $obj['url'] );
+				$data['link'][$idx]['host'] = $this->clean_string( $obj['host'] );
+				$data['link'][$idx]['host_reversed'] = $this->clean_string( $obj['host_reversed'] );
 			}
 		}
 

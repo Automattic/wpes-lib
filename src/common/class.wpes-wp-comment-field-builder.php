@@ -9,71 +9,46 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 		);
 		$args = wp_parse_args( $args, $defaults );
 
+		$mappings = new WPES_WP_Mappings();
+
 		$dynamic_templates = array(
 			array(
 				"has_template" => array(
 					"path_match" => "has.*",
-					"mapping" => array(
-						'type' => 'short',
-			) ) ),
+					"mapping" => $mappings->primitive( 'short' ),
+			) ),
 			array(
 				"shortcode_args_template" => array(
 					"path_match" => "shortcode.*.id",
-					"mapping" => array(
-						'type' => 'string',
-						'index' => 'not_analyzed',
-			) ) ),
+					"mapping" => $mappings->keyword(),
+			) ),
 			array(
 				"shortcode_count_template" => array(
 					"path_match" => "shortcode.*.count",
-					"mapping" => array(
-						'type' => 'short',
-			) ) ),
+					"mapping" => $mappings->primitive( 'short' ),
+			) ),
 		);
 
 		if ( $args['index_meta'] ) {
 			$dynamic_templates[] = array(
 				"meta_str_template" => array(
 					"path_match" => "meta.*.value",
-					"mapping" => array(
-						'type' => 'multi_field',
-						'fields' => array(
-							'value' => array(
-								'type' => 'string',
-								'index' => 'analyzed',
-							),
-							'raw' => array(
-								'type' => 'string',
-								'index' => 'not_analyzed',
-							),
-							'raw_lc' => array(
-								'type' => 'string',
-								'index' => 'analyzed',
-								'analyzer' => 'lowercase_analyzer'
-							),
-						),
-					),
+					"mapping" => $mappings->text_lcase_raw( 'value' ),
 			) );
 			$dynamic_templates[] = array(
 				"meta_long_template" => array(
 					"path_match" => "meta.*.long",
-					"mapping" => array(
-						'type' => 'long'
-					),
+					"mapping" => $mappings->primitive( 'long' ),
 			) );
 			$dynamic_templates[] = array(
 				"meta_bool_template" => array(
 					"path_match" => "meta.*.boolean",
-					"mapping" => array(
-						'type' => 'boolean'
-					),
+					"mapping" => $mappings->primitive( 'boolean' ),
 			) );
 			$dynamic_templates[] = array(
 				"meta_float_template" => array(
 					"path_match" => "meta.*.double",
-					"mapping" => array(
-						'type' => 'double'
-					),
+					"mapping" => $mappings->primitive( 'double' ),
 			) );
 		}
 
@@ -87,215 +62,35 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 				//////////////////////////////////
 				//Blog/Post/Comment meta fields
 
-				'comment_id' => array(
-					'type' => 'long',
-					'store' => 'yes'
-				),
-				'post_id' => array(
-					'type' => 'long',
-					'store' => 'yes'
-				),
-				'blog_id' => array(
-					'type' => 'integer',
-					'store' => 'yes'
-				),
-				'site_id' => array(
-					'type' => 'short',
-				),
-				'comment_type' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed'
-				),
-				'comment_status' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed'
-				),
-				'public' => array(
-					'type' => 'boolean',
-				),
+				'comment_id'            => $mappings->primitive_stored( 'long' ),
+				'post_id'               => $mappings->primitive_stored( 'long' ),
+				'blog_id'               => $mappings->primitive_stored( 'integer' ),
+				'site_id'               => $mappings->primitive( 'short' ),
+				'comment_type'          => $mappings->keyword(),
+				'comment_status'        => $mappings->keyword(),
+				'public'                => $mappings->primitive( 'boolean' ),
 
-				'lang' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed',
-				),
-				'lang_analyzer' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed',
-				),
+				'lang'                  => $mappings->keyword(),
+				'lang_analyzer'         => $mappings->keyword(),
 
-				'url' => array(
-					'type' => 'multi_field',
-					'fields' => array(
-						'url' => array(
-							'type' => 'string',
-							'index' => 'analyzed',
-							'similarity' => 'BM25',
-						),
-						'raw' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
-					),
-				),
+				'url'                   => $mappings->text_raw( 'url' ),
 
-				'date' => array(
-					'type' => 'date',
-					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
-				),
-				'date_token' => array(
-					'type' => 'object',
-					'properties' => array(
-						'year' => array(
-							'type' => 'short'
-						),
-						'month' => array(
-							'type' => 'byte'
-						),
-						'day' => array(
-							'type' => 'byte'
-						),
-						'day_of_week' => array(
-							'type' => 'byte'
-						),
-						'week_of_year' => array(
-							'type' => 'byte'
-						),
-						'day_of_year' => array(
-							'type' => 'short'
-						),
-						'hour' => array(
-							'type' => 'byte'
-						),
-						'minute' => array(
-							'type' => 'byte'
-						),
-						'second' => array(
-							'type' => 'byte'
-						),
-						'seconds_from_day' => array(
-							'type' => 'integer'
-						),
-						'seconds_from_hour' => array(
-							'type' => 'short'
-						),
-					)
-				),
-				'date_gmt' => array(
-					'type' => 'date',
-					'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'
-				),
-				'date_gmt_token' => array(
-					'type' => 'object',
-					'properties' => array(
-						'year' => array(
-							'type' => 'short'
-						),
-						'month' => array(
-							'type' => 'byte'
-						),
-						'day' => array(
-							'type' => 'byte'
-						),
-						'day_of_week' => array(
-							'type' => 'byte'
-						),
-						'week_of_year' => array(
-							'type' => 'byte'
-						),
-						'day_of_year' => array(
-							'type' => 'short'
-						),
-						'hour' => array(
-							'type' => 'byte'
-						),
-						'minute' => array(
-							'type' => 'byte'
-						),
-						'second' => array(
-							'type' => 'byte'
-						),
-						'seconds_from_day' => array(
-							'type' => 'integer'
-						),
-						'seconds_from_hour' => array(
-							'type' => 'short'
-						),
-					)
-				),
+				'date'                  => $mappings->datetime(),
+				'date_token'            => $mappings->datetimetoken(),
+				'date_gmt'              => $mappings->datetime(),
+				'date_gmt_token'        => $mappings->datetimetoken(),
 
 				//////////////////////////////////
 				//Post Content fields
 
-				'author' => array(
-					'type' => 'multi_field',
-					'fields' => array(
-						'author' => array(
-							'type' => 'string',
-							'index' => 'analyzed',
-							'similarity' => 'BM25',
-						),
-						'raw' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
-					),
-				),
-				'author_login' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed'
-				),
-				'author_id' => array(
-					'type' => 'integer'
-				),
-				'post_author_id' => array(
-					'type' => 'integer'
-				),
-				'post_author_login' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed'
-				),
-				'post_author' => array(
-					'type' => 'multi_field',
-					'fields' => array(
-						'post_author' => array(
-							'type' => 'string',
-							'index' => 'analyzed',
-							'similarity' => 'BM25',
-						),
-						'raw' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
-					),
-				),
-				'title'	=> array(
-					'type' => 'multi_field',
-					'fields' => array(
-						'title' => array(
-							'type' => 'string',
-							'index' => 'analyzed',
-							'similarity' => 'BM25',
-						),
-						'word_count' => array(
-							'type' => 'token_count',
-							'analyzer' => 'default',
-						),
-					),
-				),
-				'content'  => array(
-					'type' => 'multi_field',
-					'fields' => array(
-						'content' => array(
-							'type' => 'string',
-							'index' => 'analyzed',
-							'similarity' => 'BM25',
-						),
-						'word_count' => array(
-							'type' => 'token_count',
-							'analyzer' => 'default',
-						),
-					),
-				),
+				'author'                => $mappings->text_raw( 'author' ),
+				'author_login'          => $mappings->keyword(),
+				'author_id'             => $mappings->primitive( 'integer' ),
+				'post_author_id'        => $mappings->primitive( 'integer' ),
+				'post_author_login'     => $mappings->keyword(),
+				'post_author'           => $mappings->text_raw( 'post_author' ),
+				'title'                 => $mappings->text_count( 'title' ),
+				'content'               => $mappings->text_count( 'content' ),
 
 				//////////////////////////////////
 				//Embedded Media/Shortcodes/etc
@@ -305,59 +100,28 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 				'link' => array(
 					'type' => 'object',
 					'properties' => array(
-						'url' => array(
-							'type' => 'multi_field',
-							'fields' => array(
-								'url' => array(
-									'type' => 'string',
-									'index' => 'analyzed', //default analyzer
-									'similarity' => 'BM25',
-								),
-								'raw' => array(
-									'type' => 'string',
-									'index' => 'not_analyzed',
-								),
-							),
-						),
-						'host' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
-						'host_reversed' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
+						'url'           => $mappings->text_raw( 'url' ),
+						'host'          => $mappings->keyword(),
+						'host_reversed' => $mappings->keyword(),
 					),
 				),
 				'image' => array(
 					'type' => 'object',
 					'properties' => array(
-						'url' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
+						'url'           => $mappings->keyword(),
 					),
 				),
-				'shortcode_types' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed',
-				),
+				'shortcode_types'       => $mappings->keyword(),
 				'embed' => array(
 					'type' => 'object',
 					'properties' => array(
-						'url' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
+						'url'           => $mappings->keyword(),
 					),
 				),
 				'hashtag' => array(
 					'type' => 'object',
 					'properties' => array(
-						'name' => array(
-							'type' => 'string',
-							'index' => 'not_analyzed',
-						),
+						'name'          => $mappings->keyword(),
 					),
 				),
 				'mention' => array(
@@ -366,15 +130,8 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 						'name' => array(
 							'type' => 'multi_field',
 							'fields' => array(
-								'name' => array(
-									'type' => 'string',
-									'index' => 'not_analyzed',
-								),
-								'lc' => array(
-									'type' => 'string',
-									'index' => 'analyzed',
-									'analyzer' => 'lowercase_analyzer',
-								),
+								'name'  => $mappings->keyword(),
+								'lc'    => $mappings->keyword_lcase(),
 							),
 						),
 					),
@@ -383,15 +140,10 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 				//////////////////////////////////
 				//Comment Threading
 
-				'parent_commenter_id' => array(
-					'type' => 'integer',
-				),
-				'parent_comment_id' => array(
-					'type' => 'long',
-				),
-				'ancestor_comment_ids' => array(
-					'type' => 'long',
-				),
+				'parent_commenter_id'   => $mappings->primitive( 'integer' ),
+				'parent_comment_id'     => $mappings->primitive( 'long' ),
+				'ancestor_comment_ids'  => $mappings->primitive( 'long' ),
+
 			)
 		);
 
@@ -419,7 +171,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 			'site_id'      => $this->clean_short( $blog->site_id, 'site_id' ),
 		);
 
-		$lang_data = $this->blog_lang( $blog_id );
+		$lang_data = $this->comment_lang( $blog_id );
 		$comment_data = $this->comment_fields( $comment, $lang_data['lang'] );
 		$media_data = $this->extract_media( $args['blog_id'], $comment );
 		if ( $args['index_meta'] ) {
@@ -623,12 +375,13 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $data;
 	}
 
-	public function blog_lang( $blog_id ) {
+	public function comment_lang( $blog_id, $comment = null ) {
 		$fld_bldr = new WPES_WP_Blog_Field_Builder();
 		return $fld_bldr->blog_lang( $blog_id );
 	}
 
 	public function extract_media( $blog_id, $comment ) {
+		require_lib('class.wpcom-media-meta-extractor');
 		$data = Jetpack_Media_Meta_Extractor::extract_from_content( $comment->comment_content, Jetpack_Media_Meta_Extractor::ALL );
 
 		//only allow those top level fields that we expect to prevent accidentally creating new mappings
@@ -688,3 +441,4 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 	}
 
 }
+

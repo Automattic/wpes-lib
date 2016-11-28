@@ -11,7 +11,7 @@ abstract class WPES_Abstract_Field_Builder {
 	////////////////////////////
 	// Clean Input for ES indexing (prevent exceptions and failures)
 
-	protected function clean_object( $obj ) {
+	public function clean_object( $obj ) {
 		switch ( gettype( $obj ) ) {
 			case 'string':
 				return $this->clean_string( $obj );
@@ -31,7 +31,7 @@ abstract class WPES_Abstract_Field_Builder {
 		return $clean_obj;
 	}
 
-	protected function clean_string( $content, $truncate_at = 100000 ) {
+	public function clean_string( $content, $truncate_at = 100000 ) {
 		//convert content to utf-8 because non-utf8 chars will cause json_encode() to return null!
 		$clean_content = $this->convert_to_utf8( $content );
 
@@ -45,7 +45,7 @@ abstract class WPES_Abstract_Field_Builder {
 		return $clean_content;
 	}
 
-	protected function remove_shortcodes( $content ) {
+	public function remove_shortcodes( $content ) {
 		//strip shortcodes but keep any content enclosed in the shortcodes
 		static $shortcode_pattern = null;
 		if ( null === $shortcode_pattern ) {
@@ -129,7 +129,7 @@ abstract class WPES_Abstract_Field_Builder {
 	////////////////////////////
 	// UTF8 conversion code
 
-	protected function convert_to_utf8( $data, $from = null ) {
+	public function convert_to_utf8( $data, $from = null ) {
 		if ( ! function_exists( 'mb_convert_encoding' ) ) {
 			return $data;
 		}

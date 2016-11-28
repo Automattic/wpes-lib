@@ -45,7 +45,14 @@ class WPES_WP_Comment_Iterator extends WPES_Abstract_Iterator {
 		$this->last_id = end( $comments )->comment_ID;
 		$this->first_id = reset( $comments )->comment_ID;
 
+		if ( $this->max_id && ( $this->last_id > $this->max_id ) )
+			$this->last_id = $this_max_id;
+
 		foreach( $comments as $comment ) {
+			if ( $this->max_id && ( $comment->comment_ID > $this->max_id ) ) {
+				$this->done = true;
+				return $this->curr_ids;
+			}
 			$is_indexable = $this->doc_builder->is_indexable( array(
 				'blog_id' => $this->blog_id,
 				'id' => $comment->comment_ID,
