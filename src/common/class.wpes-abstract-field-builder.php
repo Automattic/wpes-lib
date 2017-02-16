@@ -2,9 +2,18 @@
 
 abstract class WPES_Abstract_Field_Builder {
 
-	abstract public function get_mappings( $args );
-	abstract public function get_all_fields( $args );
-	abstract public function get_update_script( $args );
+	static $strip_bad_utf8_regex = <<<'END'
+	/
+	  (
+		(?: [\x00-\x7F]                 # single-byte sequences   0xxxxxxx
+		|   [\xC0-\xDF][\x80-\xBF]      # double-byte sequences   110xxxxx 10xxxxxx
+		|   [\xE0-\xEF][\x80-\xBF]{2}   # triple-byte sequences   1110xxxx 10xxxxxx * 2
+		|   [\xF0-\xF7][\x80-\xBF]{3}   # quadruple-byte sequence 11110xxx 10xxxxxx * 3 
+		){1,100}                        # ...one or more times
+	  )
+	| .                                 # anything else
+	/x
+END;
 
 	private $utf8from;
 
@@ -23,7 +32,8 @@ abstract class WPES_Abstract_Field_Builder {
 				break;
 		}
 
-		//convert content to utf-8 because non-utf8 chars will cause json_encode() to return null		$to_utf8 = null;
+		//convert content to utf-8 because non-utf8 chars will cause json_encode() to return null
+		$to_utf8 = null;
 		if ( ! $to_utf8 )
 			$to_utf8 = Jetpack__To_UTF8::init();
 		$clean_obj = $to_utf8->convert( $obj );
@@ -41,6 +51,9 @@ abstract class WPES_Abstract_Field_Builder {
 
 		if ( 0 < $truncate_at && mb_strlen( $clean_content ) > $truncate_at )
 			$clean_content = mb_substr( $clean_content, 0, $truncate_at );
+
+		// strip any remaining bad characters
+		$clean_content = preg_replace( self::$strip_bad_utf8_regex, '$1', $clean_content );
 
 		return $clean_content;
 	}
@@ -230,6 +243,41 @@ abstract class WPES_Abstract_Field_Builder {
 			'seconds_from_day' => $this->clean_int( $day_secs, '.seconds_from_day' ),
 			'seconds_from_hour' => $this->clean_short( $hour_secs, '.seconds_from_hour' ),
 		);
+		return $data;
+	}
+
+	public function reverse_host( $host ) {
+		return implode( '.', array_reverse( explode( '.', $host) ));
+	}
+
+	//Take the given content, and apply it to the 'default' field and any fields that have
+	// a positive list of languages
+	public function multilingual_field( $content, $lang_probs ) {
+		static $all_langs = null;
+		if ( !$all_langs ) {
+			$lang_builder = new WPES_Analyzer_Builder();
+			$all_langs = array_keys( $lang_builder->supported_languages );
+		}
+
+		$data = array(
+			'default' => $content
+		);
+		foreach ( $lang_probs as $lang => $v ) {
+			// lang-detect sometimes outputs en-gb or pt-br. We only want en or pt
+			$lang = substr( $lang, 0, 2 );
+			if ( in_array( $lang, $all_langs ) ) {
+				$data[$lang] = $content;
+			}
+		}
+		return $data;
+	}
+
+	public function build_url_object( $url ) {
+
+		$data['url'] = $this->remove_url_scheme( $this->clean_string( $url ) );
+		$parsed_url = parse_url( 'http://' . $data['url'] );
+		$data['host'] = $this->clean_string( $parsed_url['host'] );
+		$data['host_reversed'] = $this->clean_string( $this->reverse_host( $parsed_url['host'] ) );
 		return $data;
 	}
 

@@ -29,7 +29,7 @@ class WPES_WP_Comment_Iterator extends WPES_Abstract_Iterator {
 			$where =  $this->sql_where . ' AND comment_ID >= ' . ( (int) $this->curr_id );
 
 		$query = $wpdb->prepare(
-			"SELECT comment_ID FROM wp_%d_comments WHERE $where" .
+			"SELECT comment_ID FROM wp_%d_comments USE INDEX ( PRIMARY ) WHERE $where" .
 			" ORDER BY comment_ID ASC LIMIT %d",
 			$this->blog_id,
 			$this->batch_size
@@ -37,6 +37,9 @@ class WPES_WP_Comment_Iterator extends WPES_Abstract_Iterator {
 		$comments = $wpdb->get_results( $query );
 
 		if ( empty( $comments ) ) {
+			if ( $wpdb->last_error )
+				return new WP_Error( 'wpes-comment-iterator-db-error', $wpdb->last_error );
+
 			$this->done = true;
 			return false;
 		}

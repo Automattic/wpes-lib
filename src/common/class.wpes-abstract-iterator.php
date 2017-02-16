@@ -5,7 +5,7 @@ abstract class WPES_Abstract_Iterator {
 	var $doc_builder = null;
 
 	//parameters controlling batch sizing
-	var $target_batch_size = 150;
+	var $target_batch_size = 100;
 	var $batch_size = 150;
 	var $delete_batch_multiple = 20; //reduce number of deleteByQuery ops
 

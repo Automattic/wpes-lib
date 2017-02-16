@@ -28,7 +28,7 @@ class WPES_WP_Post_Iterator extends WPES_Abstract_Iterator {
 			$where =  $this->sql_where . ' AND ID >= ' . ( (int) $this->curr_id );
 
 		$query = $wpdb->prepare(
-			"SELECT ID FROM wp_%d_posts WHERE $where " .
+			"SELECT ID FROM wp_%d_posts USE INDEX ( PRIMARY ) WHERE $where " .
 			" ORDER BY ID ASC LIMIT %d",
 			$this->blog_id,
 			$this->batch_size
@@ -36,6 +36,9 @@ class WPES_WP_Post_Iterator extends WPES_Abstract_Iterator {
 		$posts = $wpdb->get_results( $query );
 
 		if ( empty( $posts ) ) {
+			if ( $wpdb->last_error )
+				return new WP_Error( 'wpes-post-iterator-db-error', $wpdb->last_error );
+
 			$this->done = true;
 			return false;
 		}

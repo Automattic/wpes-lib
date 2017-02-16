@@ -158,7 +158,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 
 		switch_to_blog( $args['blog_id'] );
 
-		$post = get_comment( $args['comment_id'] );
+		$comment = get_comment( $args['comment_id'] );
 		if ( !$comment ) {
 			restore_current_blog();
 			return false;
@@ -171,7 +171,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 			'site_id'      => $this->clean_short( $blog->site_id, 'site_id' ),
 		);
 
-		$lang_data = $this->comment_lang( $blog_id );
+		$lang_data = $this->comment_lang( $args['blog_id'] );
 		$comment_data = $this->comment_fields( $comment, $lang_data['lang'] );
 		$media_data = $this->extract_media( $args['blog_id'], $comment );
 		if ( $args['index_meta'] ) {

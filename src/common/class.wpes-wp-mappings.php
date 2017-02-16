@@ -45,7 +45,6 @@ class WPES_WP_Mappings {
 		return array(
 			'type' => 'date',
 			'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd',
-			'doc_values' => 'yes',
 		);
 	}
 
@@ -186,6 +185,20 @@ class WPES_WP_Mappings {
 		);
 	}
 
+	public function text_raw( $fieldname ) {
+		return array(
+			'type' => 'multi_field',
+			'fields' => array(
+				$fieldname => array(
+					'type' => 'string',
+					'index' => 'analyzed',
+					'similarity' => 'BM25',
+				),
+				'raw' => $this->keyword(),
+			),
+		);
+	}
+
 	public function text_count( $fieldname ) {
 		return array(
 			'type' => 'multi_field',
@@ -210,6 +223,7 @@ class WPES_WP_Mappings {
 				$fieldname => array(
 					'type' => 'string',
 					'index' => 'analyzed',
+					'similarity' => 'BM25',
 				),
 				'raw' => $this->keyword(),
 				'raw_lc' => $this->keyword_lcase(),
@@ -225,16 +239,46 @@ class WPES_WP_Mappings {
 					'type' => 'string',
 					'index' => 'analyzed',
 					'analyzer' => 'default',
-				),
-				'word_count' => array(
-					'type' => 'token_count',
-					'analyzer' => 'default',
+					'similarity' => 'BM25',
+					'fields' => array(
+						'word_count' => array(
+							'type' => 'token_count',
+							'analyzer' => 'default',
+						),
+					),
 				),
 			)
 		);
 
-		$mapping['properties'] = $this->_ml( $mapping['properties'] );
+		$mapping['properties'] = $this->_ml_count( $mapping['properties'] );
 
+		return $mapping;
+	}
+
+	public function text_ml_phrases_highlights( $fieldname ) {
+		// enables term vectors and offsets for all fields
+		//  this can then speed up phrase search and make highlighting results
+		//  from this field much faster and also possible inside of aggregations
+		$mapping = array(
+			'type' => 'object',
+			'properties' => array(
+				'default' => array(
+					'type' => 'string',
+					'index' => 'analyzed',
+					'analyzer' => 'default',
+					'similarity' => 'BM25',
+					'term_vector' => 'with_positions_offsets',
+					'fields' => array(
+						'word_count' => array(
+							'type' => 'token_count',
+							'analyzer' => 'default',
+						),
+					),
+				),
+			)
+		);
+
+		$mapping['properties'] = $this->_ml_count( $mapping['properties'], true );
 		return $mapping;
 	}
 
@@ -248,17 +292,23 @@ class WPES_WP_Mappings {
 		);
 	}
 
+	//TODO: remove, transitioning to more consistent naming
 	public function text_ngramedge() {
+		return $this->text_engram();
+	}
+
+	public function text_engram() {
 		return array(
 			'type' => 'string',
 			'index' => 'analyzed',
 			'analyzer' => 'edgengram_analyzer',
+			'search_analyzer' => 'default',
 			'similarity' => 'BM25',
 			'term_vector' => 'with_positions_offsets',
 		);
 	}
 
-	public function text_raw( $fieldname ) {
+	public function text_plus_ngram( $fieldname ) {
 		return array(
 			'type' => 'multi_field',
 			'fields' => array(
@@ -268,7 +318,195 @@ class WPES_WP_Mappings {
 					'similarity' => 'BM25',
 				),
 				'raw' => $this->keyword(),
+				'ngram' => $this->text_ngram(),
 			),
+		);
+	}
+
+	public function text_plus_engram( $fieldname ) {
+		return array(
+			'type' => 'multi_field',
+			'fields' => array(
+				$fieldname => array(
+					'type' => 'string',
+					'index' => 'analyzed',
+					'similarity' => 'BM25',
+				),
+				'raw' => $this->keyword(),
+				'engram' => $this->text_engram(),
+			),
+		);
+	}
+
+	public function text_plus_ngram_engram( $fieldname ) {
+		return array(
+			'type' => 'multi_field',
+			'fields' => array(
+				$fieldname => array(
+					'type' => 'string',
+					'index' => 'analyzed',
+					'similarity' => 'BM25',
+				),
+				'raw' => $this->keyword(),
+				'engram' => $this->text_engram(),
+				'ngram' => $this->text_ngram(),
+			),
+		);
+	}
+
+	//TODO: remove, transitioning to more consistent naming
+	public function text_ml_edgengram( $fieldname ) {
+		return $this->text_ml_engram( $fieldname );
+	}
+
+	public function text_ml_engram( $fieldname ) {
+		//only add the edgengrams to the default field since
+		// the tokenizer is the same for all langs
+
+		//Add positions and offsets to the ngrams so we can
+		// do faster optimistic phrase searches
+		$mapping = array(
+			'type' => 'object',
+			'properties' => array(
+				'default' => array(
+					'type' => 'string',
+					'index' => 'analyzed',
+					'analyzer' => 'default',
+					'similarity' => 'BM25',
+					'fields' => array(
+						'word_count' => array(
+							'type' => 'token_count',
+							'analyzer' => 'default',
+						),
+						'engram' => $this->text_engram(),
+					),
+				),
+			)
+		);
+
+		$mapping['properties'] = $this->_ml_count( $mapping['properties'] );
+		return $mapping;
+	}
+
+	public function text_ml_ngram_engram( $fieldname ) {
+		//only add the edgengrams to the default field since
+		// the tokenizer is the same for all langs
+
+		//Add positions and offsets to the ngrams so we can
+		// do faster optimistic phrase searches
+		$mapping = array(
+			'type' => 'object',
+			'properties' => array(
+				'default' => array(
+					'type' => 'string',
+					'index' => 'analyzed',
+					'analyzer' => 'default',
+					'similarity' => 'BM25',
+					'fields' => array(
+						'word_count' => array(
+							'type' => 'token_count',
+							'analyzer' => 'default',
+						),
+						'engram' => $this->text_engram(),
+						'ngram' => $this->text_ngram(),
+					),
+				),
+			)
+		);
+
+		$mapping['properties'] = $this->_ml_count( $mapping['properties'] );
+		return $mapping;
+	}
+
+
+	public function url() {
+		return array(
+			'type' => 'object',
+			'properties' => array(
+				'url' => array(
+					'type' => 'multi_field',
+					'fields' => array(
+						'analyzed' => array(
+							'type' => 'string',
+							'index' => 'analyzed',
+							'similarity' => 'BM25',
+						),
+						'url' => $this->keyword(),
+						'raw' => $this->keyword(),
+					),
+				),
+				'host' => $this->keyword(),
+				'host_reversed' => $this->keyword(),
+			)
+		);
+	}
+
+	public function url_ngram() {
+		return array(
+			'type' => 'object',
+			'properties' => array(
+				'url' => array(
+					'type' => 'multi_field',
+					'fields' => array(
+						'analyzed' => $this->text(),
+						'url' => $this->keyword(),
+						'raw' => $this->keyword(),
+						'ngram' => $this->text_ngram(),
+					),
+				),
+				'host' => $this->keyword(),
+				'host_reversed' => $this->keyword(),
+			)
+		);
+	}
+
+	public function url_ngram_engram() {
+		return array(
+			'type' => 'object',
+			'properties' => array(
+				'url' => array(
+					'type' => 'multi_field',
+					'fields' => array(
+						'analyzed' => $this->text(),
+						'url' => $this->keyword(),
+						'raw' => $this->keyword(),
+						'ngram' => $this->text_ngram(),
+						'engram' => $this->text_engram(),
+					),
+				),
+				'host' => $this->keyword(),
+				'host_reversed' => $this->keyword(),
+			)
+		);
+	}
+
+	/*
+	 * This function is for backwards compatibility only.
+	 * DO NOT USE FOR NEW URL FIELDS, ONLY USE url()
+	 */
+	public function url_analyzed() {
+		return array(
+			'type' => 'object',
+			'properties' => array(
+				'url' => array(
+					'type' => 'multi_field',
+					'fields' => array(
+						'analyzed' => array(
+							'type' => 'string',
+							'index' => 'analyzed',
+							'similarity' => 'BM25',
+						),
+						'url' => array(
+							'type' => 'string',
+							'index' => 'analyzed',
+							'similarity' => 'BM25',
+						),
+						'raw' => $this->keyword(),
+					),
+				),
+				'host' => $this->keyword(),
+				'host_reversed' => $this->keyword(),
+			)
 		);
 	}
 
@@ -286,10 +524,32 @@ class WPES_WP_Mappings {
 		return $properties;
 	}
 
+	protected function _ml_count( $properties, $highlights = false ) {
+		foreach ( $this->_Analyzer_Builder->supported_languages as $lang => $analyzer ) {
+			if ( 2 !== strlen( $lang ) )
+				continue;
+			$properties[$lang] = array(
+				'type' => 'string',
+				'index' => 'analyzed',
+				'similarity' => 'BM25',
+				'analyzer' => $analyzer['name'],
+				'fields' => array(
+					'word_count' => array(
+						'type' => 'token_count',
+						'analyzer' => $analyzer['name'],
+					),
+				),
+			);
+			if ( $highlights )
+				$properties[$lang]['term_vector'] = 'with_positions_offsets';
+
+		}
+		return $properties;
+	}
+
 	protected function _store( array $mapping ) {
 		$mapping['store'] = 'yes';
 		return $mapping;
 	}
 
 }
-

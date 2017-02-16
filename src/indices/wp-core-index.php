@@ -79,6 +79,13 @@ class WPES_Core_Index_Builder extends WPES_Abstract_Index_Builder {
 		unset( $comment_mapping['_analyzer'] ); //always use the default analyzer
 
 		//Add custom fields here
+		$post_mapping['properties']['date']['doc_values'] = true;
+		$post_mapping['properties']['date_gmt']['doc_values'] = true;
+		$post_mapping['properties']['modified']['doc_values'] = true;
+		$post_mapping['properties']['modified_gmt']['doc_values'] = true;
+		$comment_mapping['properties']['date']['doc_values'] = true;
+		$comment_mapping['properties']['date_gmt']['doc_values'] = true;
+
 
 		return array(
 			'post' => $post_mapping,

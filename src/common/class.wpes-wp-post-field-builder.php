@@ -207,7 +207,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 			'blog_id'      => $this->clean_int( $args['blog_id'], 'blog_id' ),
 			'site_id'      => $this->clean_short( $blog->site_id, 'site_id' ),
 		);
-		$lang_data = $this->post_lang( $blog_id );
+		$lang_data = $this->post_lang( $args['blog_id'] );
 		$post_data = $this->post_fields( $post, $lang_data['lang'] );
 		$tax_data = $this->taxonomy( $post );
 		$commenters_data = $this->commenters( $args['blog_id'], $post );
@@ -254,11 +254,20 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 						$update_script['script'] = 'ctx._source.comment_count = count;';
 						$update_script['params'] = array( 'count' => $post->comment_count );
 					}
+
+					$date = false;
+					if ( $args['add_last_comment_date_gmt'] ) {
+						$date = $this->most_recent_comment_date( $args['blog_id'], $args['id'] );
+					}
+					if ( $date ) {
+						$update_script['script'] .= ' ctx._source.last_comment_date_gmt = date;';
+						$update_script['params']['date'] = $this->clean_date( $date );
+					}
 					break;
 				case 'remove_comment' :
 					$remove = false;
 					$user_id = $update_args;
-					$blog_details = get_blog_details( $blog_id );
+					$blog_details = get_blog_details( $args['blog_id'] );
 					$post = get_blog_post( $args['blog_id'], $args['id'] );
 					if ( !$post )
 						return array();
@@ -562,6 +571,25 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $data;
 	}
 
+	public function most_recent_comment_date( $blog_id, $post_id ) {
+		switch_to_blog( $blog_id );
+		$comments = get_comments( array(
+			'post_id' => $post_id,
+			'number'  => 1,
+			'status'  => 1,
+			'order'   => 'DESC',
+			'orderby' => 'comment_date_gmt'
+		) );
+
+		if ( empty( $comments ) )
+			$date = false;
+		else
+			$date = $comments[0]->comment_date_gmt;
+		
+		restore_current_blog();
+		return $date;
+	}
+	
 	public function extract_media( $blog_id, $post ) {
 		$GLOBALS['post'] = $post; //We need to set the global $post var to be a valid post so that inside gallery_shortcode it will be found for galleries that do not pass in an include. If not it will do a get_children() call without a post parent ID, returning ALL of the attachments and loading them in memory. See https://elasticsearchp2.wordpress.com/2016/01/15/vip-es-indexing-is-failing/ and https://a8c.slack.com/archives/vip/p1452891275024235
 		require_lib('class.wpcom-media-meta-extractor');

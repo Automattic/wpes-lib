@@ -275,7 +275,7 @@ class WPES_Analyzer_Builder {
 
 	//The language is supported by the elasticsearch-langdetect plugin
 	// see: https://github.com/jprante/elasticsearch-langdetect
-	var $has_lang_detection = array( 'af' => true, 'ar' => true, 'bg' => true, 'bn' => true, 'cs' => true, 'da' => true, 'de' => true, 'el' => true, 'en' => true, 'es' => true, 'et' => true, 'fa' => true, 'fi' => true, 'fr' => true, 'gu' => true, 'he' => true, 'hi' => true, 'hr' => true, 'hu' => true, 'id' => true, 'it' => true, 'ja' => true, 'kn' => true, 'ko' => true, 'lt' => true, 'lv' => true, 'mk' => true, 'ml' => true, 'mr' => true, 'ne' => true, 'nl' => true, 'no' => true, 'pa' => true, 'pl' => true, 'pt' => true, 'ro' => true, 'ru' => true, 'sk' => true, 'sl' => true, 'so' => true, 'sq' => true, 'sv' => true, 'sw' => true, 'ta' => true, 'te' => true, 'th' => true, 'tl' => true, 'tr' => true, 'uk' => true, 'ur' => true, 'vi' => true, 'zh-cn' => true, 'zh-tw' => true );
+	var $has_lang_detection = array( 'af' => true, 'ar' => true, 'bg' => true, 'bn' => true, 'cs' => true, 'da' => true, 'de' => true, 'el' => true, 'en' => true, 'es' => true, 'et' => true, 'fa' => true, 'fi' => true, 'fr' => true, 'gu' => true, 'he' => true, 'hi' => true, 'hr' => true, 'hu' => true, 'id' => true, 'it' => true, 'ja' => true, 'kn' => true, 'ko' => true, 'lt' => true, 'lv' => true, 'mk' => true, 'ml' => true, 'mr' => true, 'ne' => true, 'nl' => true, 'no' => true, 'pa' => true, 'pl' => true, 'pt' => true, 'ro' => true, 'ru' => true, 'sk' => true, 'sl' => true, 'so' => true, 'sq' => true, 'sv' => true, 'sw' => true, 'ta' => true, 'te' => true, 'th' => true, 'tl' => true, 'tr' => true, 'uk' => true, 'ur' => true, 'vi' => true, 'zh' => true );
 
 	static $instance;
 
@@ -306,7 +306,8 @@ class WPES_Analyzer_Builder {
 	}
 
 	function can_detect_lang( $lang ) {
-		return isset( $this->has_lang_detection[$lang] ) && $this->has_lang_detection[$lang];
+		$normalized = strtok( $lang, '-_' );
+		return isset( $this->has_lang_detection[$normalized] ) && $this->has_lang_detection[$normalized];
 	}
 
 	//build a list of analyzers for an ES index
@@ -352,8 +353,8 @@ class WPES_Analyzer_Builder {
 			);
 			$settings['filter']['edgengram_filter'] = array(
 					'type' => 'edgeNGram',
-					'min_gram' => '2',
-					'max_gram' => '10',
+					'min_gram' => '3',
+					'max_gram' => '15',
 			);
 		}
 
@@ -417,12 +418,12 @@ class WPES_Analyzer_Builder {
 				$settings['analyzer'][ $config['name'] ]['filter'][] = 'icu_normalizer';
 				$settings['analyzer'][ $config['name'] ]['filter'][] = 'icu_folding';
 				$settings['analyzer'][ $config['name'] ]['filter'][] = 'keyword_repeat';
-				$settings['analyzer'][ $config['name'] ]['filter'][] = 'unique_filter'; //remove dupes at the same location
 				if ( 'ngram' === $lang ) {
 					$settings['analyzer'][ $config['name'] ]['filter'][] = 'ngram_filter';
 				} elseif ( ( 'edgengram' === $lang ) || ( 'edgengram_raw' === $lang ) ) {
 					$settings['analyzer'][ $config['name'] ]['filter'][] = 'edgengram_filter';
 				}
+				$settings['analyzer'][ $config['name'] ]['filter'][] = 'unique_filter'; //remove dupes at the same location
 				continue;
 			}
 
