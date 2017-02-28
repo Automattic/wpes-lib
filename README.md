@@ -18,13 +18,18 @@ Glossary
  - Analyzer Builder: creates the configuration data for creating analyzers for different languages.
  - Document Iterator: iterates over a set of documents (eg posts, comments, blogs) for easy bulk indexing (and deleting).
 
+Also included:
+- The index builder for indexing all posts into a VIP index (this is probably the best
+
 Requirements:
 
 - WordPress 3.5+
+- Elasticsearch 2.x (should also works with 1.x, probably not with 5.x)
 - To achieve multi-lingual support, this library requires the use of the following ES plugins
   https://github.com/elasticsearch/elasticsearch-analysis-icu (required by all analyzers)
   https://github.com/elasticsearch/elasticsearch-analysis-kuromoji
   https://github.com/elasticsearch/elasticsearch-analysis-smartcn
+- When indexing attachment files, relies on the https://github.com/elastic/elasticsearch-mapper-attachments ES plugin. This is deprecated in 5.x in favor of an ingest api though.
 
 Example Code (/examples/):
 
