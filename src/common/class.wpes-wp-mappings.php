@@ -29,6 +29,7 @@ class WPES_WP_Mappings {
 			case 'long':
 			case 'float':
 			case 'double':
+			case 'date':
 				return array(
 					'type' => $type,
 				);
@@ -108,6 +109,10 @@ class WPES_WP_Mappings {
 		);
 	}
 
+	public function keyword_stored() {
+		return $this->_store( $this->keyword() );
+	}
+
 	public function keyword_lcase() {
 		return array(
 			'type' => 'string',
@@ -185,6 +190,10 @@ class WPES_WP_Mappings {
 		);
 	}
 
+	public function text_stored( $fieldname ) {
+		return $this->_store( $this->text() );
+	}
+
 	public function text_raw( $fieldname ) {
 		return array(
 			'type' => 'multi_field',
@@ -197,6 +206,12 @@ class WPES_WP_Mappings {
 				'raw' => $this->keyword(),
 			),
 		);
+	}
+
+	public function text_raw_stored( $fieldname ) {
+		$mapping = $this->text_raw( $fieldname );
+		$mapping['fields'][$fieldname]['store'] = true;
+		return $mapping;
 	}
 
 	public function text_count( $fieldname ) {
@@ -508,6 +523,22 @@ class WPES_WP_Mappings {
 				'host_reversed' => $this->keyword(),
 			)
 		);
+	}
+
+	public function file_attachment() {
+		return array(
+			'type' => 'attachment',
+			'fields' => array(
+				'content'        => $this->text(),
+				'title'          => $this->text_stored(),
+				'name'           => $this->text_raw_stored( 'name' ),
+				'date'           => $this->primitive_stored( 'date' ),
+				'author'         => $this->text_raw_stored( 'author' ),
+				'keywords'       => $this->text_raw_stored( 'keywords' ),
+				'content_type'   => $this->text_raw_stored( 'content_type' ),
+				'content_length' => $this->primitive_stored( 'long' ),
+				'language'       => $this->keyword_stored(),
+			) );
 	}
 
 	protected function _ml( $properties ) {

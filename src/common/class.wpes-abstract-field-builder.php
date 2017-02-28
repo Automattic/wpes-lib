@@ -55,6 +55,9 @@ END;
 		// strip any remaining bad characters
 		$clean_content = preg_replace( self::$strip_bad_utf8_regex, '$1', $clean_content );
 
+		// turn some utf characters into spaces
+		$clean_content = preg_replace( '/[\xA6\xBA\xA7]/u', ' ', $clean_content );
+
 		return $clean_content;
 	}
 
@@ -281,4 +284,61 @@ END;
 		return $data;
 	}
 
+	public function retrieve_remote_file_meta( $url ) {
+		$ch = curl_init( $url );
+
+		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, TRUE );
+		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, TRUE );
+		curl_setopt( $ch, CURLOPT_HEADER, TRUE );
+		curl_setopt( $ch, CURLOPT_NOBODY, TRUE );
+
+		//if we can't get headers in a second, then bail
+		curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 1); //1 sec to connect
+		curl_setopt( $ch, CURLOPT_TIMEOUT, 1 ); //1 sec to transfer
+
+		$data = curl_exec($ch);
+		if ( $errno = curl_errno( $ch ) ) {
+			$error_message = curl_strerror( $errno );
+			bump_stats_extras( 'ES-Curl-Attachment', 'curl-head-error-' . $errno );
+			return false; //ignore TODO: log2logstash
+		}
+		bump_stats_extras( 'ES-Curl-Attachment', 'curl-head-success' );
+
+		$data = array(
+			'size'          => curl_getinfo( $ch, CURLINFO_CONTENT_LENGTH_DOWNLOAD ),
+			'type'          => curl_getinfo( $ch, CURLINFO_CONTENT_TYPE ),
+			'http_code'     => curl_getinfo( $ch, CURLINFO_HTTP_CODE ),
+			'effective_url' => curl_getinfo( $ch, CURLINFO_EFFECTIVE_URL ),
+		);
+		
+		curl_close($ch);
+		return $data;
+	}
+
+
+	public function retrieve_remote_file( $url ){
+		$ch = curl_init( $url );
+
+		curl_setopt( $ch, CURLOPT_AUTOREFERER, TRUE );
+		curl_setopt( $ch, CURLOPT_HEADER, 0 );
+		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1 );
+		curl_setopt( $ch, CURLOPT_URL, $url );
+		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, TRUE );
+		curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 1); //1 sec to connect
+
+		//curl_setopt( $ch, CURLOPT_TIMEOUT, );
+		//curl_setopt( $ch, CURLOPT_LOW_SPEED_LIMIT, );
+			
+		$file_contents = curl_exec( $ch );
+
+		if ( $errno = curl_errno( $ch ) ) {
+			$error_message = curl_strerror( $errno );
+			bump_stats_extras( 'ES-Curl-Attachment', 'curl-get-error-' . $errno );
+			return false; //ignore TODO: log2logstash
+		}
+		bump_stats_extras( 'ES-Curl-Attachment', 'curl-get-success' );
+
+		return $file_contents;
+	}
+	
 }

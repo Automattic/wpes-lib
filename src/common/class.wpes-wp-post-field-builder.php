@@ -642,5 +642,115 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $data;
 	}
 
+	public function attached_files( $blog_id, $post ) {
+		//keep an in memory cache of encoded files to try and reduce
+		// network I/O
+		static $url2data = array();
+		
+		$attachment_post_ids = array();
+
+		if ( 'attachment' == $post->post_type ) {
+			$attachment_post_ids[] = $post->ID;
+		} else {
+			switch_to_blog( $args['blog_id'] );
+			$children = get_children( array(
+				'post_parent' => $post->ID,
+				'post_type' => 'attachment',
+				'numberposts' => -1,
+				'post_status' => 'any',
+			) );
+			restore_current_blog();
+			$attachment_post_ids = array_keys( $children );
+		}
+
+		if ( empty( $attachment_post_ids ) )
+			return;
+
+		////////////////////////////////////////////
+		// Impose some limits on what we index
+
+		$max_file_size = 10000000; //10MB
+
+		//TODO: change this to a blacklist
+		// For images and movies for instance we don't need to fetch the file
+		// to get this data since it is in the post meta for the attachment post
+		$allowed_file_types = array(
+			'application/pdf',
+			'application/vnd.ms-powerpoint',
+			'application/msword',
+		);
+		
+		//Build list of allowed domains with the domains reversed
+		// Any of the site's domains, or a subdomain are allowed
+		$deets = get_blog_details( $blog_id );
+		$allowed_domains = array( $this->reverse_host( 'wordpress.com' ) );
+		$parsed = parse_url( $deets->siteurl );
+		$allowed_domains[] = $this->reverse_host( $parsed['host'] );
+		$parsed = parse_url( $deets->home );
+		$allowed_domains[] = $this->reverse_host( $parsed['host'] );
+		$allowed_domains = array_values( array_unique( $allowed_domains ) );
+
+		$data = array();
+		$file_urls = array();
+		foreach( $attachment_post_ids as $id ) {
+			$att = get_blog_post( $blog_id, $id );
+			$file_url = $att->guid;
+
+			if ( empty( $file_url ) )
+				continue;
+
+			if ( ! in_array( $att->post_mime_type, $allowed_file_types ) )
+				continue; //skip
+			$file_urls[] = $file_url;
+		}
+
+		$file_urls = array_values( array_unique( $file_urls ) );
+		foreach( $file_urls as $file_url ) {
+			//check that the url is on an allowed domain
+			$parsed = parse_url( $file_url );
+			$file_host = $this->reverse_host( $parsed['host'] );
+			$ok = false;
+			foreach( $allowed_domains as $allowed ) {
+				if ( substr( $file_host, 0, strlen( $allowed ) ) === $allowed ) {
+					$ok = true;
+					break;
+				}
+			}
+			if ( ! $ok )
+				continue;
+
+			if ( isset( $url2data[$file_url] ) ) {
+				//we already have the data for this url in memory so don't fetch again
+				$data[] = $url2data[$file_url];
+				continue;
+			}
+			
+			//TODO: could make these much more efficient by using
+			// curl multi to make these non-blocking
+			$meta = $this->retrieve_remote_file_meta( $file_url );
+			if ( false === $size )
+				continue;
+			if ( $meta['size'] > $max_file_size )
+				continue; //skip
+
+			$contents = $this->retrieve_remote_file( $file_url );
+			if ( false === $contents )
+				continue;
+
+
+			$url2data[$file_url] = array(
+				'_name' => $this->remove_url_scheme( $this->clean_string( $file_url ) ),
+				'_content' => base64_encode( $contents ),
+			);
+			$data[] = $url2data[$file_url];
+		}
+
+		//free up memory periodically
+		if ( count( $url2data ) > 20 )
+			$url2data = array();
+		
+		return $data;
+	}
+	
 }
 
