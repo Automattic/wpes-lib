@@ -288,6 +288,8 @@ class VIP2_Post_All_Posts_Doc_Builder extends WPES_Abstract_Document_Builder {
 
 		$data['post_mime_type'] = $post_fld_bldr->clean_string( $post->post_mime_type );
 		$data['file'] = $post_fld_bldr->attached_files( $args['blog_id'], $post );
+		if ( empty( $data['file'] ) )
+			unset( $data['file'] );
 
 		$data = array_merge(
 			$data,
