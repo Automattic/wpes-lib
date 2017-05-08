@@ -16,7 +16,10 @@ class WPES_WP_Mappings {
 
 	private $_Analyzer_Builder;
 
-	public function __construct() {
+	private $_is_es5;
+
+	public function __construct( $_is_es5 = false ) {
+		$this->_is_es5 = $_is_es5;
 		$this->_Analyzer_Builder = new WPES_Analyzer_Builder();
 	}
 
@@ -26,6 +29,7 @@ class WPES_WP_Mappings {
 			case 'byte':
 			case 'short':
 			case 'integer':
+			case 'ip':
 			case 'long':
 			case 'float':
 			case 'double':
@@ -46,6 +50,13 @@ class WPES_WP_Mappings {
 		return array(
 			'type' => 'date',
 			'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd',
+		);
+	}
+
+	public function timestamp() {
+		return array(
+			'type' => 'date',
+			'format' => 'epoch_millis',
 		);
 	}
 
@@ -102,12 +113,19 @@ class WPES_WP_Mappings {
 		);
 	}
 
-	public function keyword() {
-		return array(
-			'type' => 'string',
-			'index' => 'not_analyzed',
-		);
-	}
+    public function keyword() {
+        if ($this->_is_es5) {
+            return array(
+                'type' => 'keyword',
+                'ignore_above' => 1024,
+
+            );
+        }
+        return array(
+            'type' => 'string',
+            'index' => 'not_analyzed',
+        );
+    }
 
 	public function keyword_stored() {
 		return $this->_store( $this->keyword() );
@@ -183,6 +201,12 @@ class WPES_WP_Mappings {
 	}
 
 	public function text() {
+        if ($this->_is_es5) {
+            return array(
+                'type' => 'text',
+                'similarity' => 'BM25',
+            );
+        }
 		return array(
 			'type' => 'string',
 			'index' => 'analyzed',
@@ -195,6 +219,15 @@ class WPES_WP_Mappings {
 	}
 
 	public function text_raw( $fieldname ) {
+	    if($this->_is_es5){
+            return array(
+                'type' => 'text',
+                'similarity' => 'BM25',
+                'fields' => array(
+                    'raw' => $this->keyword(),
+                ),
+            );
+        }
 		return array(
 			'type' => 'multi_field',
 			'fields' => array(
@@ -313,6 +346,15 @@ class WPES_WP_Mappings {
 	}
 
 	public function text_engram() {
+        if ($this->_is_es5) {
+            return array(
+                'type' => 'text',
+                'analyzer' => 'edgengram_analyzer',
+                'search_analyzer' => 'default',
+                'similarity' => 'BM25',
+                'term_vector' => 'with_positions_offsets',
+            );
+        }
 		return array(
 			'type' => 'string',
 			'index' => 'analyzed',
@@ -435,6 +477,23 @@ class WPES_WP_Mappings {
 
 
 	public function url() {
+	    if($this->_is_es5){
+            return array(
+                'type' => 'object',
+                'properties' => array(
+                    'url' => array(
+                        'type' => 'text',
+                        'similarity' => 'BM25',
+                        'fields' => array(
+                            'url' => $this->keyword(),
+                            'raw' => $this->keyword(),
+                        ),
+                    ),
+                    'host' => $this->keyword(),
+                    'host_reversed' => $this->keyword(),
+                )
+            );
+        }
 		return array(
 			'type' => 'object',
 			'properties' => array(

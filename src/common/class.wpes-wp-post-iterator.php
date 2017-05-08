@@ -36,8 +36,16 @@ class WPES_WP_Post_Iterator extends WPES_Abstract_Iterator {
 		$posts = $wpdb->get_results( $query );
 
 		if ( empty( $posts ) ) {
-			if ( $wpdb->last_error )
+			if ( $wpdb->last_error ) {
+				if ( preg_match( "/^Table '.+wp_[0-9]+_posts' doesn't exist$/", $wpdb->last_error ) ) {
+					a8c_irc(
+						'#es-debug',
+						$wpdb->last_error,
+						'es-iterator-err'
+					);
+				}
 				return new WP_Error( 'wpes-post-iterator-db-error', $wpdb->last_error );
+			}
 
 			$this->done = true;
 			return false;
@@ -113,3 +121,4 @@ class WPES_WP_Post_Iterator extends WPES_Abstract_Iterator {
 	}
 
 }
+

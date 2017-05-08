@@ -77,7 +77,7 @@ class WPES_WP_Comment_Field_Builder extends WPES_Abstract_Field_Builder {
 
 				'date'                  => $mappings->datetime(),
 				'date_token'            => $mappings->datetimetoken(),
-				'date_gmt'              => $mappings->datetime(),
+				'date_gmt'              => $mappings->datetime_stored(),
 				'date_gmt_token'        => $mappings->datetimetoken(),
 
 				//////////////////////////////////

@@ -352,7 +352,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $this->is_post_public( $blog_id, $post_id );
 	}
 
-	function post_fields( $post, $lang ) {
+	function post_fields( $post, $lang, $index_mlt_content = false, $index_custom_taxonomy = true, $multi_lang_support = false ) {
 		$blog_id = get_current_blog_id();
 		$user = get_userdata( $post->post_author );
 
@@ -405,7 +405,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $data;
 	}
 
-	public function post_lang( $blog_id, $post = null ) {
+	public function post_lang( $blog_id, $post = null, $is_es2 = false ) {
 		$fld_bldr = new WPES_WP_Blog_Field_Builder();
 		return $fld_bldr->blog_lang( $blog_id );
 	}
