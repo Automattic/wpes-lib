@@ -3,6 +3,7 @@
 class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 
 	var $index_media = false;
+	var $index_internal_links = false;
 
 	public function get_mappings( $args = array() ) {
 		$defaults = array(
@@ -284,6 +285,12 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 					} else {
 						$update_script['script'] = 'ctx._source.comment_count = count;';
 						$update_script['params'] = array( 'count' => $post->comment_count );
+					}
+
+					if ( $args['add_last_comment_date_gmt'] ) {
+						$date = $this->most_recent_comment_date( $args['blog_id'], $args['id'] );
+						$update_script['script'] .= ' ctx._source.last_comment_date_gmt = date;';
+						$update_script['params']['date'] = $this->clean_date( $date );
 					}
 					break;
 			}
@@ -576,9 +583,10 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		$comments = get_comments( array(
 			'post_id' => $post_id,
 			'number'  => 1,
-			'status'  => 1,
+			'status'  => 'approve',
 			'order'   => 'DESC',
-			'orderby' => 'comment_date_gmt'
+			'orderby' => 'comment_date_gmt',
+			'type'    => 'comments',
 		) );
 
 		if ( empty( $comments ) )
@@ -621,10 +629,28 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		}
 		//clean links to make sure they don't break json_encode with non-utf8 chars
 		if ( isset( $data['link'] ) ) {
+			$internal_links = array();
+
 			foreach ( $data['link'] as $idx => $obj) {
 				$data['link'][$idx]['url'] = $this->clean_string( $obj['url'] );
 				$data['link'][$idx]['host'] = $this->clean_string( $obj['host'] );
 				$data['link'][$idx]['host_reversed'] = $this->clean_string( $obj['host_reversed'] );
+
+				$url = $obj['url'];
+				if ( $this->index_internal_links
+					&& $this->is_internal_link( $blog_id, $url ) ) {
+
+					$internal_link = $this->internal_link( $url );
+					if ( $internal_link ) {
+						$internal_links[] = $internal_link;
+					}
+				}
+			}
+
+			$internal_links_count = count( $internal_links );
+			if ( $internal_links_count > 0 ) {
+				$data['link_internal'] = $internal_links;
+				$data['has']['link_internal'] = $this->clean_short( $internal_links_count, 'has.link_internal' );
 			}
 		}
 
@@ -751,6 +777,108 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		
 		return $data;
 	}
-	
+
+	protected function internal_link( $url ) {
+		$url = esc_url_raw( $url );
+
+		$parsed_url = parse_url( $url );
+
+		// Check if it's a media link
+		if ( isset( $parsed_url['path'] ) ) {
+			$extension = pathinfo( $parsed_url['path'], PATHINFO_EXTENSION );
+			if ( $extension ) {
+				$attachment_id = attachment_url_to_postid( $url );
+				if ( $attachment_id ) {
+					return array(
+						'post_id' => $this->clean_long( $attachment_id, 'post_id' ),
+						'post_type' => 'attachment',
+					);
+				}
+			}
+		}
+
+		// Check if it's a comment link
+		if ( isset( $parsed_url['fragment'] )
+			&& 0 === strpos( $parsed_url['fragment'], 'comment-' ) ) {
+			if ( preg_match( '/^comment-(\d+)/', $parsed_url['fragment'], $matches ) ) {
+				$comment_id = absint( $matches[1] );
+				$comment = get_comment( $comment_id );
+				if ( $comment ) {
+					return array(
+						'comment_id' => $this->clean_long( $comment_id, 'comment_id' ),
+						'post_id' => $this->clean_long( $comment->comment_post_ID, 'post_id' ),
+						'post_type' => sanitize_key( get_post_type( $post_id ) ),
+					);
+				}
+			}
+		}
+
+		// Fallback to permalinks
+		$post_id = url_to_postid( $url );
+		if ( ! $post_id ) {
+			return false;
+		}
+
+		$post = get_post( $post_id );
+		if ( ! $post ) {
+			return false;
+		}
+
+		return array(
+			'post_id' => $this->clean_long( $post_id, 'post_id' ),
+			'post_type' => $this->clean_string( $post->post_type ),
+		);
+	}
+
+	protected function is_internal_link( $_blog_id, $url ) {
+		// For WP.com, we need to handle `example.files.wordpress.com` separately
+		$url_host = parse_url( $url, PHP_URL_HOST );
+		if ( false !== strpos( $url_host, '.files.wordpress.com' ) ) {
+			// Also handle special sub-subdomain blogs like lobby.vip.wordpress.com and en.blog.wordpress.com
+			// Their urls may be in the form: `lobby-vip.wordpress.com`
+			$normalized_url_host = str_replace( '-', '.', $url_host );
+			$files_host = wpcom_get_blog_files_host();
+			return $url_host === $files_host || $normalized_url_host === $files_host;
+		}
+
+		$_blog_details = get_blog_details( $_blog_id );
+
+		$normalized_url = $this->normalize_url_for_compare( $url, $url );
+		$normalized_siteurl = $this->normalize_url_for_compare( $_blog_details->siteurl, $url );
+		$normalized_home = $this->normalize_url_for_compare( $_blog_details->home, $url );
+
+		$internal_domains = array_unique( [
+			$normalized_siteurl,
+			$normalized_home,
+		] );
+
+		$is_internal = false;
+		foreach ( $internal_domains as $internal_domain ) {
+			if ( 0 === strpos( $normalized_url, $internal_domain ) ) {
+				$is_internal = true;
+				break;
+			}
+		}
+
+		return $is_internal;
+	}
+
+	protected function normalize_url_for_compare( $to_normalize_url, $baseline_url ) {
+		// TODO: need to handle absolute and relative URLs
+		$normalized_url = esc_url_raw( $to_normalize_url );
+		$normalized_url = preg_replace( '/^[a-zA-z]+:\/\//', '://', $normalized_url );
+
+		// Technique borrowed from url_to_postid.
+		// Add 'www.' if it is absent and should be there.
+		if ( false !== strpos( $baseline_url, '://www.' )
+			&& false === strpos( $normalized_url, '://www.' ) ) {
+			$normalized_url = str_replace( '://', '://www.', $normalized_url );
+		} elseif ( false === strpos( $baseline_url, '://www.' ) ) {
+			// Strip 'www.' if it is present and shouldn't be.
+			$normalized_url = str_replace( '://www.', '://', $normalized_url );
+		}
+
+		return $normalized_url;
+	}
 }
 

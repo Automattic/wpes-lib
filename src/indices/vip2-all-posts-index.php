@@ -118,7 +118,7 @@ class VIP2_All_Posts_Index_Builder extends WPES_Abstract_Index_Builder {
 				'site_id'               => $mappings->primitive( 'short' ),
 				'post_type'             => $mappings->keyword(),
 				'post_format'           => $mappings->keyword(),
-				'post_mime_type'        => $mappings->text_raw(),
+				'post_mime_type'        => $mappings->text_raw( 'post_mime_type' ),
 				'post_status'           => $mappings->keyword(),
 				'public'                => $mappings->primitive( 'boolean' ),
 				'has_password'          => $mappings->primitive( 'boolean' ),
@@ -168,6 +168,14 @@ class VIP2_All_Posts_Index_Builder extends WPES_Abstract_Index_Builder {
 				//has.* added as dynamic template
 
 				'link'                  => $mappings->url_analyzed(),
+				'link_internal' => array(
+					'type' => 'object',
+					'properties' => array(
+						'post_id' => $mappings->primitive( 'long' ),
+						'post_type' => $mappings->keyword(),
+						'comment_id' => $mappings->primitive( 'long' ),
+					),
+				),
 				'image'                 => $mappings->url(),
 				'shortcode_types'       => $mappings->keyword(),
 				'embed'                 => $mappings->url(),
@@ -244,6 +252,7 @@ class VIP2_Post_All_Posts_Doc_Builder extends WPES_Abstract_Document_Builder {
 		// also handles Jetpack sites and custom WP.com stuff such as likes
 		$post_fld_bldr = new WPES_WPCOM_Post_Field_Builder();
 		$post_fld_bldr->index_media = true;
+		$post_fld_bldr->index_internal_links = true;
 
 		switch_to_blog( $args['blog_id'] );
 

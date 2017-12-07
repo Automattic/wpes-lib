@@ -200,6 +200,40 @@ class WPES_WP_Mappings {
 		return $mapping;
 	}
 
+	public function taxonomy_ml( $fieldname ) {
+		$mapping = array(
+			'type' => 'object',
+			'properties' => array(
+				'type' => array(
+					'type' => 'string',
+					'index' => 'not_analyzed',
+				),
+				'name' => array(
+					'type' => 'object',
+					'properties' => array(
+						'default' => array(
+							'type' => 'string',
+							'index' => 'analyzed',
+							'analyzer' => 'default',
+						),
+					),
+				),
+				'slug' => array(
+					'type' => 'string',
+					'index' => 'not_analyzed',
+				),
+				'term_id' => array(
+					'type' => 'string',
+					'index' => 'not_analyzed',
+				),
+			)
+		);
+
+		$mapping['properties']['name']['properties'] = $this->_ml( $mapping['properties']['name']['properties'] );
+
+		return $mapping;
+	}
+
 	public function text() {
         if ($this->_is_es5) {
             return array(
@@ -214,7 +248,7 @@ class WPES_WP_Mappings {
 		);
 	}
 
-	public function text_stored( $fieldname ) {
+	public function text_stored() {
 		return $this->_store( $this->text() );
 	}
 
@@ -380,6 +414,20 @@ class WPES_WP_Mappings {
 		);
 	}
 
+	public function long_text_engram( $fieldname ) {
+		return array(
+			'type' => 'multi_field',
+			'fields' => array(
+				$fieldname => array(
+					'type' => 'string',
+					'index' => 'analyzed',
+					'similarity' => 'BM25',
+				),
+				'engram' => $this->text_engram(),
+			),
+		);
+	}
+	
 	public function text_plus_engram( $fieldname ) {
 		return array(
 			'type' => 'multi_field',

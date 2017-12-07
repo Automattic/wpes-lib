@@ -305,6 +305,23 @@ class WPES_Analyzer_Builder {
 		return $this->supported_languages['default']['name'];
 	}
 
+	function get_analyzer_id( $lang ) {
+		// An ID is the first two characters of a $lang_code. The ID must be present
+		// in supported_languages or be a special re-mapping.
+		if ( isset( $this->supported_languages[$lang] ) )
+			return $lang;
+
+		//handle special re-mappings
+		switch( $lang ) {
+			case 'zh-cn': //Simplified Chinese
+			case 'zh-tw': //Traditional Chinese (or Taiwan?)
+			case 'zh-hk': //Hong Kong Chinese
+				return 'zh'; //Traditional Chinese
+		}
+
+		return 'default';
+	}
+
 	function can_detect_lang( $lang ) {
 		$normalized = strtok( $lang, '-_' );
 		return isset( $this->has_lang_detection[$normalized] ) && $this->has_lang_detection[$normalized];

@@ -284,6 +284,54 @@ END;
 		return $data;
 	}
 
+	//Split up a url in ways to make it easier to match in an analyzed engram field
+	public function expand_url_for_engrams( $url ) {
+		$final_string = '';
+		$url_clean = $this->remove_url_scheme( $url );
+		$final_string .= ' ' . $url_clean;
+		
+		$parsed_url = parse_url( 'http://' . $url_clean );
+		$parts = explode( '.', $parsed_url['host'] );
+
+		//split host based on .
+		$final_string .= ' ' . implode( ' ', $parts );
+
+		//index subsets of the host. eg nytimes.com, blog.nytimes.com, rss.blog.nytimes.com
+		$sub_hosts = $this->combine_string_parts( $parts, '.', array() );
+		$final_string .= ' ' . implode( ' ', $sub_hosts );
+
+		$parts = explode( '/', $parsed_url['path'] );
+		foreach( $parts as $p ) {
+			$final_string .= ' ' . $p;
+
+			//split on camelCase and on '.'
+			$dots = explode( '.', $p );
+			if ( count( $dots ) > 1 )
+				$final_string .= ' ' . implode( ' ', $dots );
+			$camels = preg_split("/((?<=[a-z])(?=[A-Z])|(?=[A-Z][a-z]))/", $p );
+			if ( count( $camels ) > 1 )
+				$final_string .= ' ' . implode( ' ', $camels );
+		}
+		
+		return $this->clean_string( $final_string );
+	}
+
+	//Recursively build a series of tokens out of the parts
+	// example: array( 'blog', 'greg', 'wordpress', 'com' ) => array( 'wordpress.com', 'greg.wordpress.com', 'blog.greg.wordpress.com' )
+	public function combine_string_parts( $parts, $glue, $strings = array() ) {
+		if ( empty( $parts ) )
+			return $strings;
+		$one = array_pop( $parts );
+		if ( empty( $strings ) ) {
+			$last = $one;
+			$one = array_pop( $parts );
+		} else {
+			$last = (string) end( $strings );
+		}
+		$strings[] = $one . $glue . $last;
+		return $this->combine_string_parts( $parts, $glue, $strings );
+	}
+	
 	public function retrieve_remote_file_meta( $url ) {
 		$ch = curl_init( $url );
 

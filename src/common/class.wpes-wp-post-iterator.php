@@ -56,7 +56,7 @@ class WPES_WP_Post_Iterator extends WPES_Abstract_Iterator {
 		$this->first_id = reset( $posts )->ID;
 
 		if ( $this->max_id && ( $this->last_id > $this->max_id ) )
-			$this->last_id = $this_max_id;
+			$this->last_id = $this->max_id;
 
 		foreach( $posts as $post ) {
 			if ( $this->max_id && ( $post->ID > $this->max_id ) ) {
