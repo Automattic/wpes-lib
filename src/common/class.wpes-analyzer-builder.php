@@ -282,6 +282,18 @@ class WPES_Analyzer_Builder {
 	function __construct() {
 	}
 
+	function set_es_ver( $ver ) {
+		$ver = (int)$ver;
+
+		// Reset ver flags
+		$this->_is_es5plus = false;
+		if ( $ver >= 5 ) {
+			$this->_is_es5plus = true;
+		}
+
+		return $this;
+	}
+
 	function init() {
 		if ( ! self::$instance ) {
 			self::$instance = new Jetpack__To_UTF8;
@@ -328,9 +340,10 @@ class WPES_Analyzer_Builder {
 	}
 
 	//build a list of analyzers for an ES index
-	function build_analyzers( $langs = array() ) {
-		if ( empty( $langs ) )
+	function build_analyzers( $langs = array(), $with_stop_words = true ) {
+		if ( empty( $langs ) ) {
 			$langs = array_keys( $this->supported_languages );
+		}
 
 		$settings = array( 'filter' => array(), 'analyzer' => array() );
 
@@ -404,10 +417,12 @@ class WPES_Analyzer_Builder {
 			if ( 'de' == $lang ) {
 				////From: http://gibrown.wordpress.com/2013/05/01/three-principles-for-multilingal-indexing-in-elasticsearch/#comment-857
 				$settings['analyzer'][ $config['name'] ]['tokenizer'] = $config['tokenizer'];
-				$settings['filter'][$lang . '_stop_filter'] = array(
-					'type' => 'stop',
-					'stopwords' => array( $config['stopwords'] )
-				);
+				if ( $with_stop_words ) {
+					$settings['filter'][$lang . '_stop_filter'] = array(
+						'type' => 'stop',
+						'stopwords' => array( $config['stopwords'] )
+					);
+				}
 				$settings['filter'][ $lang . '_stem_filter' ] = array(
 					'type' => 'stemmer',
 					'name' => $config['stemming']
@@ -417,7 +432,9 @@ class WPES_Analyzer_Builder {
 					'mappings' => array( 'ß=>ss', 'Ä=>ae', 'ä=>ae', 'Ö=>oe', 'ö=>oe', 'Ü=>ue', 'ü=>ue', 'ph=>f' ),
 				);
 				$settings['analyzer'][ $config['name'] ]['filter'][] = 'icu_normalizer';
-				$settings['analyzer'][ $config['name'] ]['filter'][] = $lang . '_stop_filter';
+				if ( $with_stop_words ) {
+					$settings['analyzer'][ $config['name'] ]['filter'][] = $lang . '_stop_filter';
+				}
 				$settings['analyzer'][ $config['name'] ]['filter'][] = $lang . '_stem_filter';
 				$settings['analyzer'][ $config['name'] ]['filter'][] = 'icu_folding';
 				$settings['analyzer'][ $config['name'] ]['char_filter'] = array( $lang . '_char_filter' );
@@ -456,7 +473,7 @@ class WPES_Analyzer_Builder {
 			//////////////
 			//Stopwords
 
-			if ( 'he' == $lang ) {
+			if ( 'he' == $lang && $with_stop_words ) {
 				//hebrew has its own custom stopword list (no built in ES one)
 				$settings['filter'][$lang . '_stop_filter'] = array(
 					'type' => 'stop',
@@ -475,7 +492,7 @@ class WPES_Analyzer_Builder {
 				$settings['analyzer'][ $config['name'] ]['filter'][] = 'elision';
 			}
 
-			if ( $config['stopwords'] ) {
+			if ( $config['stopwords'] && $with_stop_words ) {
 				$settings['filter'][$lang . '_stop_filter'] = array(
 					'type' => 'stop',
 					'stopwords' => array( $config['stopwords'] )
@@ -503,6 +520,213 @@ class WPES_Analyzer_Builder {
 				//	$settings['analyzer'][ $config['name'] ]['filter'][] = 'bigram_filter';
 			}
 
+		}
+
+		if ( $this->_is_es5plus ) {
+			$settings['normalizer'] = array(
+				'lowercase_normalizer' => array(
+					"type" => "custom",
+					"char_filter" => array(),
+					"filter" => array( "lowercase" ),
+				)
+			);
+		}
+
+		return $settings;
+	}
+
+
+	//build a list of experimental analyzers for JP Search
+	function build_jp_search_analyzers() {
+		$langs = $this->supported_languages;
+		unset( $langs['ngram'] );
+		unset( $langs['edgengram'] );
+		unset( $langs['edgengram_raw'] );
+
+		$settings = [
+			'filter' => [
+				'possessive_filter' => [
+					"type" => "stemmer",
+					"name" => "possessive_english"
+				],
+				'unique_filter' => [
+					'type' => 'unique',
+					'only_on_same_position' => true
+				],
+				'edgengram_1_10_filter' => [
+					'type' => 'edgeNGram',
+					'min_gram' => '1',
+					'max_gram' => '10',
+				],
+				'edgengram_1_3_filter' => [
+					'type' => 'edgeNGram',
+					'min_gram' => '1',
+					'max_gram' => '3',
+				],
+				'edgengram_3_15_filter' => [
+					'type' => 'edgeNGram',
+					'min_gram' => '3',
+					'max_gram' => '15',
+				],
+				'ja_pos_filter' => [
+					'type' => "kuromoji_part_of_speech",
+					'stoptags' => array( "助詞-格助詞-一般", "助詞-終助詞" ),
+				],
+				'greek_lowercase_filter' => [
+					"type" => "lowercase",
+					"language" =>  "greek" //use greek so it will remove accents, etc
+				],
+				'he_stop_filter' => [
+					//hebrew has its own custom stopword list (no built in ES one)
+					'type' => 'stop',
+					'stopwords' => $this->get_hebrew_stopwords()
+				],
+			],
+			'char_filter' => [
+				'de_char_filter' => [
+					'type' => "mapping",
+					'mappings' => array( 'ß=>ss', 'Ä=>ae', 'ä=>ae', 'Ö=>oe', 'ö=>oe', 'Ü=>ue', 'ü=>ue', 'ph=>f' ),
+				],
+			],
+			'tokenizer' => [
+				'kuromoji' => [
+					'type' => 'kuromoji_tokenizer',
+					'mode' => 'search'
+				],
+			],
+			'analyzer' => [
+			]
+		];
+
+		foreach ( $langs as $lang => $config ) {
+			$name = $lang . '_analyzer';
+			$ename = $lang . '_edge_analyzer';
+			if ( $lang == 'default' ) {
+				$name = 'default';
+			}
+			$settings['analyzer'][ $name ] = [
+				'type' => $config['analyzer'],
+				'filter' => [],
+			];
+			$settings['analyzer'][ $ename ] = [
+				'type' => 'custom',
+				'filter' => [],
+			];
+
+			//add per lang filters
+			if ( ! empty( $config['stopwords'] ) ) {
+				$settings['filter'][$lang . '_stop_filter'] = array(
+					'type' => 'stop',
+					'stopwords' => array( $config['stopwords'] )
+				);
+			}
+			if ( ! empty( $config['stemming'] ) ) {
+				$settings['filter'][ $lang . '_stem_filter' ] = array(
+					'type' => 'stemmer',
+					'name' => $config['stemming']
+				);
+			}
+
+			////////////////////////////////
+			// Lang specific customizations
+
+			if ( 'ja' == $lang ) {
+				////From: http://tech.gmo-media.jp/post/70245090007/elasticsearch-kuromoji-japanese-fulltext-search
+				$settings['analyzer'][ $name ]['tokenizer'] = 'kuromoji';
+				$settings['analyzer'][ $name ]['filter'][] = 'kuromoji_baseform';
+				$settings['analyzer'][ $name ]['filter'][] = 'ja_pos_filter'; //stopwords
+				 //full ICU will remove too much from ja chars
+				$settings['analyzer'][ $name ]['filter'][] = 'greek_lowercase_filter';
+				$settings['analyzer'][ $name ]['filter'][] = 'cjk_width';
+
+				//edgengram identical except one extra filter
+				$settings['analyzer'][ $ename ] = $settings['analyzer'][ $name ];
+				$settings['analyzer'][ $ename ]['filter'][] = 'edgengram_1_10_filter';
+
+				continue; //very different from others, so break the loop
+			}
+
+			///////////////////////////
+			// Custom Char Filters
+
+			if ( 'de' == $lang ) {
+				////From: http://gibrown.wordpress.com/2013/05/01/three-principles-for-multilingal-indexing-in-elasticsearch/#comment-857
+				$settings['analyzer'][ $name ]['char_filter'] = array( $lang . '_char_filter' );
+			}
+
+			/////////////////////////////////////////////////
+			//First filter is normalization
+			// normalization needs to be before stopwords so we combine UTF-8 characters (eg ê)
+			if ( $config['tokenizer'] ) {
+				$settings['analyzer'][ $name ]['tokenizer'] = $config['tokenizer'];
+				$settings['analyzer'][ $name ]['filter'][] = 'icu_normalizer';
+			}
+
+			////////////////////
+			//Custom Filters
+
+			if ( 'fr' == $lang ) {
+				//French has elision's that need to be removed
+				$settings['analyzer'][ $name ]['filter'][] = 'elision';
+			}
+
+			//////////////
+			//Stopwords
+
+			if ( 'he' == $lang ) {
+				$settings['analyzer'][ $name ]['filter'][] = $lang . '_stop_filter';
+			}
+
+			if ( $config['stopwords'] ) {
+				$settings['analyzer'][ $name ]['filter'][] = $lang . '_stop_filter';
+			}
+
+			//////////////
+			//Stemming
+
+			if ( in_array( $lang, [ 'en', 'default' ] ) ) {
+				$settings['analyzer'][ $name ]['filter'][] = 'possessive_filter';
+			}
+			if ( $config['stemming'] ) {
+				$settings['analyzer'][ $name ]['filter'][] = $lang . '_stem_filter';
+			}
+
+			/////////////////////////////////////////////////
+			//final filters (character folding and bigrams)
+			//  character folding must be after stopwords so we correctly filter out words with accents
+			if ( $lang != 'ko' ) {
+				$settings['analyzer'][ $name ]['filter'][] = 'icu_folding';
+			}
+
+			////////////////
+			// Add edgengram
+
+			//edgengram identical except one extra filter
+			switch( $lang ) {
+				case 'ko':
+					// this is almost certainly wrong, probably need nori analyzer
+					$settings['analyzer'][ $ename ] = $settings['analyzer'][ $name ];
+					break;
+				case 'zh':
+					// probably wrong
+					$settings['analyzer'][ $ename ] = $settings['analyzer'][ $name ];
+					$settings['analyzer'][ $ename ]['filter'][] = 'edgengram_1_3_filter';
+					break;
+				default:
+					$settings['analyzer'][ $ename ] = $settings['analyzer'][ $name ];
+					$settings['analyzer'][ $ename ]['filter'][] = 'edgengram_3_15_filter';
+			}
+
+		}
+
+		if ( $this->_is_es5plus ) {
+			$settings['normalizer'] = array(
+				'lowercase_normalizer' => array(
+					"type" => "custom",
+					"char_filter" => array(),
+					"filter" => array( "lowercase" ),
+				)
+			);
 		}
 
 		return $settings;

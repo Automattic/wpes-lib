@@ -7,6 +7,8 @@ include_once dirname( __FILE__ ) . "/common/class.wpes-abstract-document-builder
 include_once dirname( __FILE__ ) . "/common/class.wpes-abstract-field-builder.php";
 include_once dirname( __FILE__ ) . "/common/class.wpes-abstract-iterator.php";
 
+include_once dirname( __FILE__ ) . "/common/class.wpes-util-jvmnumeric.php";
+
 include_once dirname( __FILE__ ) . "/common/class.wpes-wp-mappings.php";
 
 include_once dirname( __FILE__ ) . "/common/class.wpes-wp-post-field-builder.php";

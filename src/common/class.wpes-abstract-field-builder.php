@@ -61,6 +61,17 @@ END;
 		return $clean_content;
 	}
 
+	public function clean_strings( $values ) {
+		if ( $values === null ) {
+			return null;
+		}
+		$acc = [];
+		foreach ( $values as $value ) {
+			$acc[] = $this->clean_string( $value );
+		}
+		return $acc;
+	}
+
 	public function remove_shortcodes( $content ) {
 		//strip shortcodes but keep any content enclosed in the shortcodes
 		static $shortcode_pattern = null;
@@ -73,41 +84,33 @@ END;
 		return $clean_content;
 	}
 
-	//check for values out of bounds. For reduced memory consumption ES does not have the
-	// full range that some of our MySQL fields have. eg site_id is 64 bits and we give it 16.
-	//  This does not check the negative range.
-	//  returns max number if out of bounds, so we can easily find incorrect data
-	public function clean_long( $val, $field ) {
-		$max = 9223372036854775807; //Java max, don't rely on PHP max
-		return $this->clean_number( $val, $max, $field );
-	}
-	public function clean_int( $val, $field ) {
-		$max = 2147483647; //Java max, don't rely on PHP max
-		return $this->clean_number( $val, $max, $field );
-	}
-	public function clean_short( $val, $field ) {
-		$max = 32767; //Java max, don't rely on PHP max
-		return $this->clean_number( $val, $max, $field );
-	}
-	public function clean_byte( $val, $field ) {
-		$max = 127; //Java max, don't rely on PHP max
-		return $this->clean_number( $val, $max, $field );
-	}
-	private function clean_number( $val, $max, $field ) {
-		$v = intval( $val );
-		if ( $v > $max ) {
-			error_log( 'Number out of range for "' . $field . '". Val: ' . $val . ' Max: ' . $max );
-			return $max;
+	private $_JVMNumericInstance;
+	private function _JVMNumeric() {
+		if ( !( $this->_JVMNumericInstance instanceof WPES_Util_JVMNumeric ) ) {
+			$this->_JVMNumericInstance = new WPES_Util_JVMNumeric();
 		}
-		return $v;
+		return $this->_JVMNumericInstance;
 	}
-
-	public function clean_float( $val ) {
-		$v = (float) $val;
-		if ( is_finite( $v ) ) {
-			return $v;
-		}
-		return 0;
+	public function clean_long( $val, $field = 'unknown' ) {
+		return $this->_JVMNumeric()->clamp( 'long', $val, $field );
+	}
+	public function clean_int( $val, $field = 'unknown' ) {
+		return $this->_JVMNumeric()->clamp( 'int', $val, $field );
+	}
+	public function clean_short( $val, $field = 'unknown' ) {
+		return $this->_JVMNumeric()->clamp( 'short', $val, $field );
+	}
+	public function clean_byte( $val, $field = 'unknown' ) {
+		return $this->_JVMNumeric()->clamp( 'byte', $val, $field );
+	}
+	public function clean_double( $val, $field = 'unknown' ) {
+		return $this->_JVMNumeric()->clamp( 'double', $val, $field );
+	}
+	public function clean_float( $val, $field = 'unknown' ) {
+		return $this->_JVMNumeric()->clamp( 'float', $val, $field );
+	}
+	public function clean_half_float( $val, $field = 'unknown' ) {
+		return $this->_JVMNumeric()->clamp( 'half_float', $val, $field );
 	}
 
 	public function clean_date( $date_str ) {

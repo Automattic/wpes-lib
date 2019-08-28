@@ -468,19 +468,81 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		return $data;
 	}
 
+	public function guesstimate_meta_count( $blog_id ) {
+		global $wpdb;
+		
+		//$metakey_cnt = wp_cache_get( 'es_metakey_count' );
+		if ( false == $metakey_cnt ) {
+			$num_samples = 100;
+			$sampled_meta = array();
+			$deets = get_blog_details( $blog_id );
+			$num_posts = $deets->post_count;
+			if ( $num_posts < ( 10 * $num_samples ) ) {
+				return $this->exact_count_meta( $blog_id );
+			}
+			$max_post_id = (int) $wpdb->get_var( "SELECT MAX(ID) FROM {$wpdb->posts}" );
+
+			for( $i = 0; $i < $num_samples * 1.1; $i++ ) {
+				$post_id = mt_rand( 1, $max_post_id ); 
+				$post_id = $wpdb->get_var( $wpdb->prepare(
+					"SELECT ID FROM {$wpdb->posts} WHERE ID >= %d LIMIT 1",
+					$post_id
+				) );
+				$sampled_meta[] = get_post_meta( $post_id );
+			}
+
+			$keys = array();
+			for( $i = 0; $i < $num_samples; $i++ ) {
+				foreach( $sampled_meta[$i] as $key => $val ) {
+					if ( ! is_protected_meta( $key ) ) {
+						$keys[ $key ] = true;
+					}
+				}
+			}
+			
+			$new_keys = 0;
+			for( $i = $num_samples; $i < $num_samples * 1.1; $i++ ) {
+				foreach( $sampled_meta[$i] as $key => $val ) {
+					if ( ! is_protected_meta( $key ) ) {
+						if ( ! isset( $keys[ $key ] ) ) {
+							$new_keys++;
+						}
+					}
+				}
+			}
+
+			$metakey_cnt = count( $keys );
+			$metakey_cnt += ( $num_posts - $num_samples ) / ( $num_posts * 0.1 ) * $new_keys;
+			$metakey_cnt = intval( $metakey_cnt );
+			
+			//wp_cache_set( 'es_metakey_count', $metakey_cnt );
+		}
+		return $metakey_cnt;
+	}
+
+	public function exact_count_meta( $blog_id ) {
+		global $wpdb;
+		
+		//$metakey_cnt = wp_cache_get( 'es_metakey_count' );
+		if ( false == $metakey_cnt ) {
+			$metakey_cnt = $wpdb->get_var( "SELECT COUNT(DISTINCT(meta_key)) FROM $wpdb->postmeta WHERE meta_key NOT LIKE '\_%'" );
+			wp_cache_set( 'es_metakey_count', $metakey_cnt );
+		}
+		return (int) $metakey_cnt;
+	}
+	
 	public function meta( $post, $blacklist = array(), $whitelist = array() ) {
 		global $wpdb;
 		global $blog_id;
 		$data = array();
+		if ( 568005 == $blog_id ) {
+			return $data;
+		}
 		$meta = get_post_meta( $post->ID );
 		if ( !empty( $meta ) ) {
 			$data['meta'] = array();
 
-			$metakey_cnt = wp_cache_get( 'es_metakey_count' );
-			if ( false == $metakey_cnt ) {
-				$metakey_cnt = $wpdb->get_var( "SELECT COUNT(DISTINCT(meta_key)) FROM $wpdb->postmeta WHERE meta_key NOT LIKE '\_%'" );
-				wp_cache_set( 'es_metakey_count', $metakey_cnt );
-			}
+			$metakey_cnt = $this->exact_count_meta( $blog_id );
 			if ( $metakey_cnt > 10000 )
 				return $data;
 
@@ -637,8 +699,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 				$data['link'][$idx]['host_reversed'] = $this->clean_string( $obj['host_reversed'] );
 
 				$url = $obj['url'];
-				if ( $this->index_internal_links
-					&& $this->is_internal_link( $blog_id, $url ) ) {
+				if ( $this->_index_internal_links( $blog_id, $url ) ) {
 
 					$internal_link = $this->internal_link( $url );
 					if ( $internal_link ) {
@@ -655,6 +716,38 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		}
 
 		return $data;
+	}
+
+	private function _index_internal_links( $blog_id, $url ) {
+		if ( !$this->index_internal_links ) {
+			return false;
+		}
+
+		/**
+		 *  Currently only Capital One is using this system of searching
+		 *  internal links. To index this field is very expensive and causing
+		 *  replication lag so we are limiting it to only clients that need it
+		 *  for now.
+		 *
+		 *  See:
+		 *  https://a8c.slack.com/archives/C02JQ08G0/p1540398953000100
+		 *  https://elasticsearchp2.wordpress.com/2017/09/26/indexing-inline-attachments/
+		 */
+		$whitelist = array(
+			123129067,
+			129577076,
+			129497226,
+			137234973,
+		);
+		if ( !in_array( $blog_id, $whitelist ) ) {
+			return false;
+		}
+
+		if ( !$this->is_internal_link( $blog_id, $url ) ) {
+			return false;
+		}
+
+		return true;
 	}
 
 	public function featured_image( $post ) {
@@ -695,7 +788,7 @@ class WPES_WP_Post_Field_Builder extends WPES_Abstract_Field_Builder {
 		////////////////////////////////////////////
 		// Impose some limits on what we index
 
-		$max_file_size = 10000000; //10MB
+		$max_file_size = 1000000; //1MB
 
 		//TODO: change this to a blacklist
 		// For images and movies for instance we don't need to fetch the file

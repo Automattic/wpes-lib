@@ -1,12 +1,14 @@
 <?php
 
 /*
- * VIP Index containing posts of all statuses and all CPTs (including attachments).
- * Post attachments are indexed using Apache Tikka
- * Does not include revisions.
+ * VIP 6.x Index Version 0
+ *   Contains posts of all statuses and all CPTs (including attachments).
+ *   Post attachments are indexed using Apache Tikka
+ *   Does not include revisions.
+ *   Includes search as you type fields
  */
 
-class VIP2_All_Posts_Index_Builder extends WPES_Abstract_Index_Builder {
+class VIP_6_v0_Index_Builder extends WPES_Abstract_Index_Builder {
 
 	public function get_config( $args ) {
 		$defaults = array(
@@ -26,7 +28,8 @@ class VIP2_All_Posts_Index_Builder extends WPES_Abstract_Index_Builder {
 		$args = wp_parse_args( $args, $defaults );
 
 		$analyzer_builder = new WPES_Analyzer_Builder();
-		$analyzers = $analyzer_builder->build_analyzers( array( $args['lang'], 'lowercase' ) );
+		$analyzer_builder->set_es_ver( 6 );
+		$analyzers = $analyzer_builder->build_analyzers( array( $args['lang'], 'lowercase', 'edgengram' ) );
 
 		//use the lang analyzer as the default analyzer for this index
 		$analyzer_name = $analyzer_builder->get_analyzer_name( $args['lang'] );
@@ -39,6 +42,8 @@ class VIP2_All_Posts_Index_Builder extends WPES_Abstract_Index_Builder {
 			$shards = 4;
 		}
 
+		//optimized for replication across a three data center cluster
+		//almost never need more than one shard
 		$global_settings = array(
 			'number_of_shards' => $shards,
 			'number_of_replicas' => 2,
@@ -53,7 +58,7 @@ class VIP2_All_Posts_Index_Builder extends WPES_Abstract_Index_Builder {
 		);
 		$args = wp_parse_args( $args, $defaults );
 
-		$mappings = new WPES_WPCOM_Mappings();
+		$mappings = new WPES_WPCOM_Mappings( true );
 
 		$dynamic_post_templates = array(
 			// taxonomy.*
@@ -145,8 +150,9 @@ class VIP2_All_Posts_Index_Builder extends WPES_Abstract_Index_Builder {
 				'menu_order'            => $mappings->primitive( 'integer' ),
 
 				'lang'                  => $mappings->keyword(),
-				'lang_analyzer'         => $mappings->text_autodetected(), // TODO: use keyword() here instead
+				'lang_analyzer'         => $mappings->keyword(),
 
+				//TODO: should we have a permalink field here to match elsewhere?
 				'url'                   => $mappings->text_raw( 'url' ),
 				'slug'                  => $mappings->keyword(),
 
@@ -168,13 +174,14 @@ class VIP2_All_Posts_Index_Builder extends WPES_Abstract_Index_Builder {
 				'author_login'          => $mappings->keyword(),
 				'author_id'             => $mappings->primitive( 'integer' ),
 				'title'                 => $mappings->text_count( 'title' ),
-				'post_name'             => $mappings->text_count( 'post_name' ),
 				'content'               => $mappings->text_count( 'content' ),
 				'excerpt'               => $mappings->text_count( 'excerpt' ),
 				'tag_cat_count'         => $mappings->primitive( 'short' ),
 				'tag'                   => $mappings->tagcat( 'tag' ),
 				'category'              => $mappings->tagcat( 'category' ),
-				'mlt_content'           => $mappings->text(),
+				'mlt_content'           => $mappings->long_text_engram( 'mlt_content' ),
+
+				'faqs'                  => $mappings->long_text_engram( 'faqs' ),
 
 				'file'                  => $mappings->file_attachment(),
 
@@ -185,7 +192,7 @@ class VIP2_All_Posts_Index_Builder extends WPES_Abstract_Index_Builder {
 
 				//has.* added as dynamic template
 
-				'link'                  => $mappings->url_analyzed(),
+				'link'                  => $mappings->url(),
 				'link_internal' => array(
 					'type' => 'object',
 					'properties' => array(
@@ -208,13 +215,7 @@ class VIP2_All_Posts_Index_Builder extends WPES_Abstract_Index_Builder {
 				'mention' => array(
 					'type' => 'object',
 					'properties' => array(
-						'name' => array(
-							'type' => 'multi_field',
-							'fields' => array(
-								'name'  => $mappings->keyword(),
-								'lc'    => $mappings->keyword_lcase(),
-							),
-						),
+						'name' => $mappings->keyword_plus_lcase(),
 					),
 				),
 
@@ -238,7 +239,6 @@ class VIP2_All_Posts_Index_Builder extends WPES_Abstract_Index_Builder {
 		);
 
 		//TODO correct urls with the latest stuff from global2 index
-
 		return array(
 			'post' => $post_mapping,
 		);
@@ -246,13 +246,13 @@ class VIP2_All_Posts_Index_Builder extends WPES_Abstract_Index_Builder {
 
 	public function get_doc_callbacks() {
 		return array(
-			'post' => 'VIP2_Post_All_Posts_Doc_Builder',
+			'post' => 'VIP_6_v0_Post_Doc_Builder',
 		);
 	}
 
 }
 
-class VIP2_Post_All_Posts_Doc_Builder extends WPES_Abstract_Document_Builder {
+class VIP_6_v0_Post_Doc_Builder extends WPES_Abstract_Document_Builder {
 	protected $_statii_blacklist = array(
 		'auto-draft', //revisions
 	);
@@ -276,17 +276,6 @@ class VIP2_Post_All_Posts_Doc_Builder extends WPES_Abstract_Document_Builder {
 
 		$post = get_post( $args['id'] );
 		if ( !$post ) {
-			es_api_index_trace_log(
-				ES_API_INDEX_PROCESSING,
-				$args['blog_id'],
-				$args['id'],
-				__FUNCTION__,
-				'VIP2 Index : Unable to retireve post',
-				array(
-					'args'	=> $args,
-					'post'	=> $post
-				)
-			);
 			restore_current_blog();
 			return false;
 		}
@@ -300,8 +289,6 @@ class VIP2_Post_All_Posts_Doc_Builder extends WPES_Abstract_Document_Builder {
 		$lang_data = $post_fld_bldr->post_lang( $args['blog_id'], $post );
 		$post_data = $post_fld_bldr->post_fields( $post, $lang_data['lang'] );
 		$post_data['public'] = $post_fld_bldr->is_post_public( $args['blog_id'], $post->ID );
-		// add post_name
-		$post_data['post_name'] = $post_fld_bldr->clean_string( $post->post_name );
 		$tax_data = $post_fld_bldr->taxonomy( $post );
 		$added_on_data = $post_fld_bldr->added_on( $post );
 
@@ -318,12 +305,18 @@ class VIP2_Post_All_Posts_Doc_Builder extends WPES_Abstract_Document_Builder {
 			apply_filters( 'wpcom_elasticsearch_meta_whitelist_filter', array( '_thumbnail_id', '_wp_old_slug' ) )
 		);
 
-		$mlt_content_data = $post_fld_bldr->mlt_content( array(
+		$faq_data = $this->faqs( $post->ID );
+
+		$data['mlt_content'] = $this->concat_all_content( array(
 			'content' => $post_data['content'],
 			'title' => $post_data['title'],
+			'url' => $post_data['url'],
+			'author' => $post_data['author'],
+			'author_login' => $post_data['author_login'],
 			'excerpt' => $post_data['excerpt'],
 			'tags' => isset( $tax_data['tag'] ) ? wp_list_pluck( $tax_data['tag'], 'name' ) : array(),
 			'cats' => isset( $tax_data['category'] ) ? wp_list_pluck( $tax_data['category'], 'name' ) : array(),
+			'faqs' => isset( $faq_data['faqs'] ) ? $faq_data['faqs'] : array(),
 		) );
 
 		$data['post_mime_type'] = $post_fld_bldr->clean_string( $post->post_mime_type );
@@ -331,36 +324,12 @@ class VIP2_Post_All_Posts_Doc_Builder extends WPES_Abstract_Document_Builder {
 		if ( empty( $data['file'] ) )
 			unset( $data['file'] );
 
-		es_api_index_trace_log(
-			ES_API_INDEX_PROCESSING,
-			$args['blog_id'],
-			$args['id'],
-			__FUNCTION__,
-			'VIP2 Index : Post Retrieved',
-			array(
-				'args'	=> $args,
-				'post'	=> $post,
-				'data' => $data,
-				'lang_data' => $lang_data,
-				'post_data' => $post_data,
-				'tax_data' => $tax_data,
-				'added_on_data' => $added_on_data,
-				'commenters_data' => $commenters_data,
-				'reblog_data' => $reblog_data,
-				'likers_data' => $likers_data,
-				'geo_data' => $geo_data,
-				'media_data' => $media_data,
-				'feat_img_data' => $feat_img_data,
-				'meta_data' => $meta_data,
-				'mlt_content_data' => $mlt_content_data
-			)
-		);
-
 		$data = array_merge(
 			$data,
 			$lang_data,
 			$post_data,
 			$tax_data,
+			$faq_data,
 			$added_on_data,
 			$commenters_data,
 			$reblog_data,
@@ -368,20 +337,7 @@ class VIP2_Post_All_Posts_Doc_Builder extends WPES_Abstract_Document_Builder {
 			$geo_data,
 			$media_data,
 			$feat_img_data,
-			$meta_data,
-			$mlt_content_data
-		);
-
-		es_api_index_trace_log(
-			ES_API_INDEX_PROCESSING,
-			$args['blog_id'],
-			$args['id'],
-			__FUNCTION__,
-			'VIP2 Index : ndoc',
-			array(
-				'args'	=> $args,
-				'ndoc' => $data,
-			)
+			$meta_data
 		);
 
 		restore_current_blog();
@@ -447,6 +403,68 @@ class VIP2_Post_All_Posts_Doc_Builder extends WPES_Abstract_Document_Builder {
 			'start' => $args['start'],
 		) );
 		return $it;
+	}
+
+	//TODO: move into the post field builder
+	protected function faqs( $post_id ) {
+		$fld_bldr = new WPES_WP_Post_Field_Builder();
+		$faq_meta = get_post_meta( $post_id, 'faqs' );
+		if ( empty( $faq_meta ) ) {
+			return array();
+		}
+		if ( ! is_array( $faq_meta ) ) {
+			return array();
+		}
+
+		$questions = array();
+		foreach( $faq_meta as $m ) {
+			$questions[] = $fld_bldr->clean_string( $m, 5000 );
+		}
+
+		return array( 'faqs' => $questions );
+	}
+
+	protected function concat_all_content( $args ) {
+		$fld_bldr = new WPES_WP_Post_Field_Builder();
+
+		$all_content = '';
+		$all_content .= $fld_bldr->clean_string( $args['title'], 5000 ) . ' ';
+		if ( !empty( $args['tags'] ) ) {
+			$all_content .= $fld_bldr->clean_string( implode( ' ', $args['tags'] ), 5000 ) . ' ';
+		}
+		if ( !empty( $args['cats'] ) ) {
+			$all_content .= $fld_bldr->clean_string( implode( ' ', $args['cats'] ), 5000 ) . ' ';
+		}
+
+		//TODO: add all taxonomies
+
+		if ( $args['author'] ) {
+			$all_content .= $fld_bldr->clean_string( $args['author'], 5000 ) . ' ';
+		}
+		if ( $args['author_login'] ) {
+			$all_content .= $fld_bldr->clean_string( $args['author_login'], 5000 ) . ' ';
+		}
+
+		if ( $args['url'] ) {
+			$all_content .= $fld_bldr->expand_url_for_engrams( $args['url'] ) . ' ';
+		}
+
+		//TODO: add all links?
+
+		if ( !empty( $args['faqs'] ) ) {
+			foreach( $args['faqs'] as $q ) {
+				$all_content .= $fld_bldr->clean_string( $q, 5000 ) . ' ';
+			}
+		}
+
+		//2500 words in Mongolian (ave 12 chars per word), English is 3600 words
+		// this field also gets used for search as you type matching
+		$all_content .= $fld_bldr->clean_string( $args['content'], 30000 ) . ' ';
+		$all_content .= $fld_bldr->clean_string( $args['excerpt'], 5000 ) . ' ';
+
+		//TODO: extract product and other names, e.g. CamelCase
+
+		return $all_content;
 	}
 
 	protected function _get_disallowed_statii( $as_sql_in = false ) {
