@@ -276,17 +276,6 @@ class VIP2_Post_All_Posts_Doc_Builder extends WPES_Abstract_Document_Builder {
 
 		$post = get_post( $args['id'] );
 		if ( !$post ) {
-			es_api_index_trace_log(
-				ES_API_INDEX_PROCESSING,
-				$args['blog_id'],
-				$args['id'],
-				__FUNCTION__,
-				'VIP2 Index : Unable to retireve post',
-				array(
-					'args'	=> $args,
-					'post'	=> $post
-				)
-			);
 			restore_current_blog();
 			return false;
 		}
@@ -331,31 +320,6 @@ class VIP2_Post_All_Posts_Doc_Builder extends WPES_Abstract_Document_Builder {
 		if ( empty( $data['file'] ) )
 			unset( $data['file'] );
 
-		es_api_index_trace_log(
-			ES_API_INDEX_PROCESSING,
-			$args['blog_id'],
-			$args['id'],
-			__FUNCTION__,
-			'VIP2 Index : Post Retrieved',
-			array(
-				'args'	=> $args,
-				'post'	=> $post,
-				'data' => $data,
-				'lang_data' => $lang_data,
-				'post_data' => $post_data,
-				'tax_data' => $tax_data,
-				'added_on_data' => $added_on_data,
-				'commenters_data' => $commenters_data,
-				'reblog_data' => $reblog_data,
-				'likers_data' => $likers_data,
-				'geo_data' => $geo_data,
-				'media_data' => $media_data,
-				'feat_img_data' => $feat_img_data,
-				'meta_data' => $meta_data,
-				'mlt_content_data' => $mlt_content_data
-			)
-		);
-
 		$data = array_merge(
 			$data,
 			$lang_data,
@@ -370,18 +334,6 @@ class VIP2_Post_All_Posts_Doc_Builder extends WPES_Abstract_Document_Builder {
 			$feat_img_data,
 			$meta_data,
 			$mlt_content_data
-		);
-
-		es_api_index_trace_log(
-			ES_API_INDEX_PROCESSING,
-			$args['blog_id'],
-			$args['id'],
-			__FUNCTION__,
-			'VIP2 Index : ndoc',
-			array(
-				'args'	=> $args,
-				'ndoc' => $data,
-			)
 		);
 
 		restore_current_blog();

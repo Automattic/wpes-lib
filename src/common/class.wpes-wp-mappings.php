@@ -108,17 +108,26 @@ class WPES_WP_Mappings {
 		return $this->store( $this->primitive( $type ) );
 	}
 
+	public function timestamp( $type = 'millis' ) {
+		switch ( $type ) {
+			case 'iso':
+				return array(
+					'type' => 'date',
+					'format' => 'strict_date_time', // yyyy-MM-dd'T'HH:mm:ss.SSSZZ
+				);
+			case 'millis':
+			default:
+				return array(
+					'type' => 'date',
+					'format' => 'epoch_millis',
+				);
+		}
+	}
+
 	public function datetime() {
 		return array(
 			'type' => 'date',
 			'format' => 'yyyy-MM-dd HH:mm:ss||yyyy-MM-dd',
-		);
-	}
-
-	public function timestamp() {
-		return array(
-			'type' => 'date',
-			'format' => 'epoch_millis',
 		);
 	}
 

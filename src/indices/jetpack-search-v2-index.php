@@ -26,7 +26,7 @@ class Jetpack_Search_v2_Index_Builder extends WPES_Abstract_Index_Builder {
 		$analyzers = $analyzer_builder->build_jp_search_analyzers();
 
 		$global_settings = array(
-			'number_of_shards' => 300,
+			'number_of_shards' => 100,
 			'number_of_replicas' => 2,
 			'analysis' => $analyzers,
 		);
@@ -131,11 +131,16 @@ class Jetpack_Search_v2_Index_Builder extends WPES_Abstract_Index_Builder {
 			array(
 				"tax_template_name" => array(
 					"path_match" => "taxonomy.*.name",
-					"mapping" => $mappings->text_raw( 'name' ),
+					"mapping" => $mappings->text_raw_stored( 'name' ),
 			) ),
 			array(
 				"tax_template_slug" => array(
 					"path_match" => "taxonomy.*.slug",
+					"mapping" => $mappings->keyword(),
+			) ),
+			array(
+				"tax_template_slug_name" => array(
+					"path_match" => "taxonomy.*.slug_slash_name",
 					"mapping" => $mappings->keyword(),
 			) ),
 			array(
@@ -148,7 +153,7 @@ class Jetpack_Search_v2_Index_Builder extends WPES_Abstract_Index_Builder {
 			array(
 				"has_template" => array(
 					"path_match" => "has.*",
-					"mapping" => $mappings->primitive( 'short' ),
+					"mapping" => $mappings->primitive_stored( 'short' ),
 			) ),
 
 			// shortcode.*
@@ -222,7 +227,7 @@ class Jetpack_Search_v2_Index_Builder extends WPES_Abstract_Index_Builder {
 				'post_id'               => $mappings->primitive_stored( 'long' ),
 				'blog_id'               => $mappings->primitive_stored( 'integer' ),
 				'site_id'               => $mappings->primitive( 'short' ),
-				'post_type'             => $mappings->keyword(),
+				'post_type'             => $mappings->keyword_stored(),
 				'post_format'           => $mappings->keyword(),
 				'post_mime_type'        => $mappings->text_raw( 'post_mime_type' ),
 				'post_status'           => $mappings->keyword(),
@@ -261,7 +266,7 @@ class Jetpack_Search_v2_Index_Builder extends WPES_Abstract_Index_Builder {
 				'all_content'           => $this->map_ml_engram(),
 				'title'                 => $this->map_ml_text( true ),
 				'content'               => $this->map_ml_text( true ),
-				'excerpt'               => $this->map_ml_text(),
+				'excerpt'               => $this->map_ml_text( true ),
 				'comments'              => $this->map_ml_text( true ),
 
 				'tag_cat_count'         => $mappings->primitive( 'short' ),
@@ -296,7 +301,7 @@ class Jetpack_Search_v2_Index_Builder extends WPES_Abstract_Index_Builder {
 					),
 				),
 				'image'                 => $mappings->url_stored(),
-				'shortcode_types'       => $mappings->keyword(),
+				'shortcode_types'       => $mappings->keyword_stored(),
 				'embed'                 => $mappings->url(),
 				'featured_image'        => $mappings->keyword(),
 				'featured_image_url'    => $mappings->url(),
@@ -330,6 +335,7 @@ class Jetpack_Search_v2_Index_Builder extends WPES_Abstract_Index_Builder {
 
 				'blog'                      => $mappings->bloginfo(),
 				'date_added'                => $mappings->datetime(),
+				'last_index_date'           => $mappings->datetime(),
 				'liker_ids'                 => $mappings->primitive( 'integer' ),
 				'like_count'                => $mappings->primitive_stored( 'short' ),
 				'is_reblogged'              => $mappings->primitive( 'boolean' ),
@@ -348,6 +354,19 @@ class Jetpack_Search_v2_Index_Builder extends WPES_Abstract_Index_Builder {
 						'price' => $mappings->primitive_stored( 'float' ),
 						'min_price' => $mappings->primitive( 'float' ),
 						'max_price' => $mappings->primitive( 'float' ),
+						'currency' => $mappings->keyword_stored(),
+						'currency_pos' => $mappings->keyword_stored(),
+					),
+				),
+
+				//////////////////////////////////
+				//Stats
+
+				'stats' => array(
+					'type' => 'object',
+					'properties' => array(
+						'30_day_views_ratio' => $mappings->primitive( 'float' ),
+						'7_day_views_ratio' => $mappings->primitive( 'float' ),
 					),
 				),
 
@@ -360,6 +379,15 @@ class Jetpack_Search_v2_Index_Builder extends WPES_Abstract_Index_Builder {
 
 			)
 		);
+
+		//add slug_slash_name to existing tag and category objects
+		$post_mapping['properties']['tag']['properties']['slug_slash_name'] = $mappings->keyword();
+		$post_mapping['properties']['category']['properties']['slug_slash_name'] = $mappings->keyword();
+
+		//store fields we will return
+		$post_mapping['properties']['tag']['properties']['name']['properties']['default']['store'] = true;
+		$post_mapping['properties']['category']['properties']['name']['properties']['default']['store'] = true;
+
 
 		//TODO correct urls with the latest stuff from global2 index
 
@@ -385,11 +413,12 @@ class Jetpack_Search_v2_Post_Doc_Builder extends WPES_Abstract_Document_Builder 
 
 	protected $_indexable_statii = array(
 		'publish',
-		'trash',
-		'pending',
-		'draft',
-		'future',
-		'private',
+		//'trash',
+		//'pending',
+		//'draft',
+		//'future',
+		//'private',
+		'closed',  //bbpress resolved
 	);
 
 	public function get_id( $args ) {
@@ -438,7 +467,7 @@ class Jetpack_Search_v2_Post_Doc_Builder extends WPES_Abstract_Document_Builder 
 
 		$post_data = $this->jp_search_filter_taxonomies( $post_data );
 
-		$post_data['public'] = $post_fld_bldr->is_post_public( $args['blog_id'], $post->ID );
+		$post_data['public'] = $this->is_post_public( $args['blog_id'], $post->ID );
 		$url = $post_data['url'];
 		$post_data['permalink'] = $post_fld_bldr->build_url_object( $url );
 		unset( $post_data['url'] );
@@ -455,9 +484,25 @@ class Jetpack_Search_v2_Post_Doc_Builder extends WPES_Abstract_Document_Builder 
 
 		$meta_data = $this->jp_search_meta( $post );
 
+		//Add Woo Options
+		$wc_currency = get_option( 'woocommerce_currency' );
+		if ( $wc_currency ) {
+			if ( ! isset( $meta_data['wc'] ) ) {
+				$meta_data['wc'] = [];
+			}
+			$meta_data['wc']['currency'] = $wc_currency;
+			$meta_data['wc']['currency_pos'] = get_option( 'woocommerce_currency', 'left' );
+		}
+
 		//$faq_data = $this->faqs( $post->ID );
 
-		$data['comments'] = $this->_comment_text( $args['blog_id'], $args['id'], $lang_data['langs'] );
+		$data['comments'] = $this->_comment_text( $args['blog_id'], $post, $lang_data['langs'] );
+		if ( ( $post->post_type == 'topic' ) && ( $commenters_data['comment_count'] == 0 ) ) {
+			//bbpress topic, override comment_count
+			if ( isset( $data['comments']['default'] ) ) {
+				$commenters_data['comment_count'] = count( $data['comments']['default'] );
+			}
+		}
 
 		$all_content = $this->concat_all_content( array(
 			'content' => $post_data['content']['default'],
@@ -480,9 +525,30 @@ class Jetpack_Search_v2_Post_Doc_Builder extends WPES_Abstract_Document_Builder 
 		//if ( empty( $data['file'] ) )
 		//	unset( $data['file'] );
 
+		// add slug_slash_name
+		if ( isset( $post_data['tag'] ) ) {
+			foreach( $post_data['tag'] as $idx => $t ) {
+				$post_data['tag'][$idx]['slug_slash_name'] = $t['slug'] .'/' . $t['name']['default'];
+			}
+		}
+		if ( isset( $post_data['category'] ) ) {
+			foreach( $post_data['category'] as $idx => $t ) {
+				$post_data['category'][$idx]['slug_slash_name'] = $t['slug'] .'/' . $t['name']['default'];
+			}
+		}
+		if ( isset( $post_data['taxonomy'] ) ) {
+			foreach( $post_data['taxonomy'] as $tax => $set ) {
+				foreach( $set as $idx => $t ) {
+					$post_data['taxonomy'][$tax][$idx]['slug_slash_name'] = $t['slug'] .'/' . $t['name'];
+				}
+			}
+		}
+
 		$data['title_html'] = $this->_build_title_html( $args['blog_id'], $args['id'] );
 		$data['excerpt_html'] = $this->_build_excerpt_html( $args['blog_id'], $args['id'] );
 		$data['gravatar_url'] = $this->_build_gravatar_url( $post_data['author_id'] );
+
+		$post_stats = $this->get_post_stats( $args['blog_id'], $args['id'] );
 
 		$data = array_merge(
 			$data,
@@ -496,7 +562,8 @@ class Jetpack_Search_v2_Post_Doc_Builder extends WPES_Abstract_Document_Builder 
 			$geo_data,
 			$media_data,
 			$feat_img_data,
-			$meta_data
+			$meta_data,
+			$post_stats
 		);
 
 		restore_current_blog();
@@ -519,6 +586,18 @@ class Jetpack_Search_v2_Post_Doc_Builder extends WPES_Abstract_Document_Builder 
 		return false;
 	}
 
+	public function is_indexing_enabled( $args ) {
+		if ( is_private_blog( $args['blog_id'] ) ) {
+			return false;
+		}
+
+		if ( wpcom_is_jp_search_index_enabled( $args['blog_id'] ) ) {
+			return true;
+		}
+
+		return false;
+	}
+
 	public function is_indexable( $args ) {
 		if ( ! $this->is_indexing_enabled( $args ) )
 			return false;
@@ -532,7 +611,16 @@ class Jetpack_Search_v2_Post_Doc_Builder extends WPES_Abstract_Document_Builder 
 			return false;
 		}
 
-		if ( 'revision' == $post->post_type ) {
+		$skip_post_types = [
+			'revision',
+			'vip-legacy-redirect',
+			'scheduled-action',
+			'nbcs_video_lookup',
+			'reply', //bbpress, these get included in the topic
+			'product_variation', //woocommerce, not really public
+			'nav_menu_item',
+		];
+		if ( in_array( $post->post_type, $skip_post_types ) ) {
 			restore_current_blog();
 			return false;
 		}
@@ -660,6 +748,10 @@ class Jetpack_Search_v2_Post_Doc_Builder extends WPES_Abstract_Document_Builder 
 	protected function _build_title_html( $blog_id, $post_id ) {
 		switch_to_blog( $blog_id );
 		$t = get_the_title( $post_id );
+		if ( empty( $t ) ) {
+			$url = get_permalink( $post_id );
+			$t = parse_url( $url, PHP_URL_PATH );
+		}
 		restore_current_blog();
 		return $t;
 	}
@@ -682,15 +774,26 @@ class Jetpack_Search_v2_Post_Doc_Builder extends WPES_Abstract_Document_Builder 
 		return null;
 	}
 
-	protected function _comment_text( $blog_id, $post_id, $post_langs ) {
+	protected function _comment_text( $blog_id, $post, $post_langs ) {
 		switch_to_blog( $blog_id );
 		$comments = get_comments( [
-			'post_id' => $post_id,
+			'post_id' => $post->ID,
 			'number' => 100,
 		] );
+
+		$replies = [];
+		if ( $post->post_type == 'topic' ) {
+			//bbpress topic, look for replies to add in also
+			$replies = get_posts( [
+				'post_parent' => $post->ID,
+				'post_type' => 'reply',
+				'posts_per_page' => 100,
+			] );
+		}
+
 		restore_current_blog();
 
-		if ( empty( $comments ) ) {
+		if ( empty( $comments ) && empty( $replies ) ) {
 			return [];
 		}
 
@@ -707,10 +810,21 @@ class Jetpack_Search_v2_Post_Doc_Builder extends WPES_Abstract_Document_Builder 
 		}
 
 		$fld_bldr = new WPES_WP_Post_Field_Builder();
-		foreach( $comments as $c ) {
-			$txt = $fld_bldr->clean_string( $c->comment_content );
-			foreach( $langs as $l ) {
-				$comment_data[$l][] = $txt;
+		if ( ! empty( $comments ) ) {
+			foreach( $comments as $c ) {
+				$txt = $fld_bldr->clean_string( $c->comment_content );
+				foreach( $langs as $l ) {
+					$comment_data[$l][] = $txt;
+				}
+			}
+		}
+
+		if ( ! empty( $replies ) ) {
+			foreach( $replies as $r ) {
+				$txt = $fld_bldr->clean_string( $r->post_content );
+				foreach( $langs as $l ) {
+					$comment_data[$l][] = $txt;
+				}
 			}
 		}
 
@@ -1010,6 +1124,9 @@ class Jetpack_Search_v2_Post_Doc_Builder extends WPES_Abstract_Document_Builder 
 
 
 	protected function get_post_stats( $blog_id, $post_id ) {
+		if ( defined( 'TC_ES_TEST' ) && TC_ES_TEST ) {
+			return []; //no stats tables to query
+		}
 		$stats_data = [];
 		if ( $post_id <= 0 ) {
 			return [];
@@ -1021,22 +1138,114 @@ class Jetpack_Search_v2_Post_Doc_Builder extends WPES_Abstract_Document_Builder 
 			$days = 30;
 			$history = stats_get_daily_history( false, $blog_id, 'views', null, $end_date, $days );
 			$total_last_30_days = array_sum( $history );
+			if ( $total_last_30_days == 0 ) {
+				$total_last_30_days = 1; //avoid divide by zero
+			}
 		}
 
 		$end_date = false;
 		$num_days = 30;
-		$history = stats_get_postviews_summary( $blog_id, $end_date, $num_days, "AND post_id = '$post_id'", 0, false );
+		$history = stats_get_postviews( $blog_id, $end_date, $num_days, "AND post_id = '$post_id'", 0, true );
 
-		$total_post_last_30_days = 0; //TODO
-		$total_post_last_7_days = 0; //TODO
+		$i = 0;
+		$total_post_last_30_days = 0;
+		$total_post_last_7_days = 0;
+		foreach( $history as $date => $o ) {
+			$total_post_last_30_days += $o[$post_id];
+			if ( $i < 7 ) {
+				$total_post_last_7_days += $o[$post_id];
+			}
+			$i++;
+		}
 
 		$stats_data['stats']['30_day_views_ratio'] = $total_post_last_30_days / $total_last_30_days;
+		if ( $stats_data['stats']['30_day_views_ratio'] > 0.9999 ) {
+			$stats_data['stats']['30_day_views_ratio'] = 0.9999;
+		}
 		$stats_data['stats']['7_day_views_ratio'] = $total_post_last_7_days / $total_last_30_days;
+		if ( $stats_data['stats']['7_day_views_ratio'] > 0.9999 ) {
+			$stats_data['stats']['7_day_views_ratio'] = 0.9999;
+		}
 		$stats_data['last_index_date'] = date( 'Y-m-d H:i:s' );
 
 		return $stats_data;
 	}
 
+	//local version that lets us override searchablility for
+	// certain post types
+	function is_post_public( $blog_id, $post_id ) {
+		switch_to_blog( $blog_id );
+
+		$post = get_post( $post_id );
+
+		if ( ! $post ) {
+			es_api_index_trace_log(
+				ES_API_INDEX_PROCESSING,
+				$blog_id,
+				$post_id,
+				__FUNCTION__,
+				'get_post() returned with failure -- returning',
+				array(
+					'post'	=> $post,
+				 )
+			);
+
+			restore_current_blog();
+			return false;
+		}
+
+		$post_status = get_post_status( $post_id );
+		$public_stati = get_post_stati( array( 'public' => true ) );
+		if ( $post->post_type == 'topic' ) {
+			//make sure bbpress closed topics are treated as searchable
+			$public_stati['closed'] = 'closed';
+		}
+
+		if ( ! in_array( $post_status, $public_stati ) ) {
+			restore_current_blog();
+			return false;
+		}
+
+		if ( strlen( $post->post_password ) > 0 ) {
+			restore_current_blog();
+			return false;
+		}
+
+		$blog_details = get_blog_details( $blog_id );
+
+		$post_ok = true;
+		//post types we should not be excluding
+		$dont_exclude_from_search = [
+			'topic', //bbpress
+			'forum', //bbpress
+		];
+		if ( 1 == $blog_details->site_id ) {
+			$post_type_obj = get_post_type_object( $post->post_type );
+			if ( $post_type_obj->exclude_from_search ) {
+				if ( ! in_array( $post->post_type, $dont_exclude_from_search ) ) {
+					$post_ok = false;
+				}
+			}
+
+			if ( ! $post_type_obj->public ) {
+				$post_ok = false;
+			}
+		} else {
+			//jetpack, look for synced post meta indicating privacy
+			if ( 1 == get_post_meta( $post->ID, "_jetpack_post_is_excluded_from_search", true ) ) {
+				if ( ! in_array( $post->post_type, $dont_exclude_from_search ) ) {
+					$post_ok = false;
+				}
+			}
+
+			if ( 1 != get_post_meta( $post->ID, "_jetpack_post_is_public", true ) ) {
+				$post_ok = false;
+			}
+		}
+
+		restore_current_blog();
+		return $post_ok;
+	}
 
 	//experimental version of clean string to handle stripping html better
 	//TODO: fix me and try using this
